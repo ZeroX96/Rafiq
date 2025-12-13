@@ -9,6 +9,8 @@ import 'package:rafiq/features/azkar/presentation/azkar_screen.dart';
 import 'package:rafiq/features/overview/presentation/overview_screen.dart';
 import 'package:rafiq/features/settings/presentation/settings_screen.dart';
 import 'package:rafiq/features/onboarding/presentation/onboarding_screen.dart';
+import 'package:rafiq/features/pin/presentation/pin_screen.dart';
+import 'package:rafiq/core/services/pin_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -24,6 +26,12 @@ final _router = GoRouter(
     print(
       'Redirect Check: Onboarding=$onboardingCompleted, Path=${state.uri.path}',
     );
+
+    // PIN Check
+    final hasPin = prefs.containsKey('app_pin');
+    if (hasPin && !PinService.isVerified && state.uri.path != '/pin') {
+      return '/pin';
+    }
 
     if (!onboardingCompleted && state.uri.path != '/onboarding') {
       return '/onboarding';
@@ -41,6 +49,16 @@ final _router = GoRouter(
     GoRoute(
       path: '/settings',
       builder: (context, state) => const SettingsScreen(),
+    ),
+    GoRoute(
+      path: '/pin',
+      builder:
+          (context, state) => PinScreen(
+            onSuccess: () {
+              PinService.isVerified = true;
+              context.go('/daily-prayer');
+            },
+          ),
     ),
     ShellRoute(
       builder: (context, state, child) {

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:rafiq/core/services/settings_service.dart';
 import 'package:rafiq/features/qada_debt/domain/qada_calculator.dart';
+import 'package:rafiq/features/pin/presentation/pin_screen.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -28,6 +29,18 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   int _pubertyAge = 13;
   int _menstruationDuration = 7; // Default 7 days
   Map<String, dynamic>? _selectedCity;
+
+  // Qada Calculation Options
+  String _qadaCalculationMethod = 'puberty'; // 'puberty', 'duration', 'manual'
+  int _missedYearsCount = 1;
+  Map<String, int> _manualDebtInput = {
+    'Fajr': 0,
+    'Dhuhr': 0,
+    'Asr': 0,
+    'Maghrib': 0,
+    'Isha': 0,
+    'Witr': 0,
+  };
 
   // Calculation Result
   Map<String, int> _calculatedDebt = {};
@@ -69,6 +82,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         curve: Curves.easeInOut,
       );
       setState(() => _currentPage++);
+      if (_currentPage == 5) {
+        _calculateDebt();
+      }
     } else {
       _finishOnboarding();
     }
@@ -86,13 +102,26 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   void _calculateDebt() {
     final calculator = QadaCalculator();
-    final debt = calculator.calculateDebtFromProfile(
-      dob: _dob,
-      pubertyAge: _pubertyAge,
-      gender: _gender,
-      hasMenstruation: _gender == 'Girl' || _gender == 'Woman',
-      menstruationDuration: _menstruationDuration,
-    );
+    Map<String, int> debt = {};
+
+    if (_qadaCalculationMethod == 'puberty') {
+      debt = calculator.calculateDebtFromProfile(
+        dob: _dob,
+        pubertyAge: _pubertyAge,
+        gender: _gender,
+        hasMenstruation: _gender == 'Girl' || _gender == 'Woman',
+        menstruationDuration: _menstruationDuration,
+      );
+    } else if (_qadaCalculationMethod == 'duration') {
+      debt = calculator.calculateDebt(
+        yearsMissed: _missedYearsCount,
+        gender: _gender,
+        hasMenstruation: _gender == 'Girl' || _gender == 'Woman',
+        menstruationDuration: _menstruationDuration,
+      );
+    } else {
+      debt = Map.from(_manualDebtInput);
+    }
 
     setState(() {
       _calculatedDebt = debt;
@@ -156,10 +185,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             _buildNameStep(),
             _buildGenderMadhabStep(),
             _buildAgeStep(),
-            if (_gender == 'Girl' || _gender == 'Woman')
-              _buildMenstruationStep()
-            else
-              const SizedBox(), // Placeholder to keep index sync
+            _buildQadaOptionsStep(), // New step for Qada debt options
             _buildLocationStep(),
             _buildSummaryStep(),
           ],
@@ -391,34 +417,119 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     );
   }
 
-  Widget _buildMenstruationStep() {
+  Widget _buildQadaOptionsStep() {
     return Padding(
       padding: const EdgeInsets.all(24.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+      child: ListView(
         children: [
           _buildQuoteCard(
             "Allah does not burden a soul beyond that it can bear.",
             "Quran 2:286",
           ),
           const Text(
-            'Cycle Duration',
+            'Missed Prayers (Qada)',
             style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
-          const Text('Average days per month to exclude from prayer debt.'),
-          const SizedBox(height: 24),
-          Text('Days: $_menstruationDuration'),
-          Slider(
-            value: _menstruationDuration.toDouble(),
-            min: 3,
-            max: 10,
-            divisions: 7,
-            label: _menstruationDuration.toString(),
-            onChanged: (v) => setState(() => _menstruationDuration = v.toInt()),
+          Text(
+            'How would you like to calculate your missed prayers?',
+            style: Theme.of(context).textTheme.bodyLarge,
           ),
+          const SizedBox(height: 16),
+          _buildRadioOption(
+            'puberty',
+            'Calculate from Puberty',
+            'Based on your age and puberty age',
+          ),
+          if (_qadaCalculationMethod == 'puberty') ...[
+            Padding(
+              padding: const EdgeInsets.only(left: 16, bottom: 16),
+              child: Text(
+                'We will calculate missed prayers from age $_pubertyAge to now.',
+              ),
+            ),
+            if (_gender == 'Girl' || _gender == 'Woman')
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Average Menstruation Days (per month): $_menstruationDuration',
+                  ),
+                  Slider(
+                    value: _menstruationDuration.toDouble(),
+                    min: 3,
+                    max: 10,
+                    divisions: 7,
+                    label: _menstruationDuration.toString(),
+                    onChanged:
+                        (v) =>
+                            setState(() => _menstruationDuration = v.toInt()),
+                  ),
+                ],
+              ),
+          ],
+
+          _buildRadioOption(
+            'duration',
+            'I know the duration',
+            'Enter number of years missed',
+          ),
+          if (_qadaCalculationMethod == 'duration')
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                children: [
+                  Expanded(child: Text('Years Missed: $_missedYearsCount')),
+                  IconButton(
+                    icon: const Icon(Icons.remove),
+                    onPressed:
+                        () => setState(() {
+                          if (_missedYearsCount > 0) _missedYearsCount--;
+                        }),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.add),
+                    onPressed: () => setState(() => _missedYearsCount++),
+                  ),
+                ],
+              ),
+            ),
+
+          _buildRadioOption(
+            'manual',
+            'Manual Entry',
+            'Enter specific counts for each prayer',
+          ),
+          if (_qadaCalculationMethod == 'manual')
+            ..._manualDebtInput.keys
+                .map(
+                  (prayer) => ListTile(
+                    title: Text(prayer),
+                    trailing: SizedBox(
+                      width: 100,
+                      child: TextFormField(
+                        initialValue: _manualDebtInput[prayer].toString(),
+                        keyboardType: TextInputType.number,
+                        onChanged:
+                            (v) =>
+                                _manualDebtInput[prayer] = int.tryParse(v) ?? 0,
+                      ),
+                    ),
+                  ),
+                )
+                .toList(),
         ],
       ),
+    );
+  }
+
+  Widget _buildRadioOption(String value, String title, String subtitle) {
+    return RadioListTile<String>(
+      value: value,
+      groupValue: _qadaCalculationMethod,
+      onChanged: (v) => setState(() => _qadaCalculationMethod = v!),
+      title: Text(title),
+      subtitle: Text(subtitle),
     );
   }
 
@@ -464,7 +575,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   Widget _buildSummaryStep() {
-    _calculateDebt();
     return Padding(
       padding: const EdgeInsets.all(24.0),
       child: Column(
@@ -477,6 +587,20 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           const SizedBox(height: 24),
           Text('Name: ${_nameController.text}'),
           Text('Location: ${_selectedCity?['name'] ?? "Not Selected"}'),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.lock),
+            title: const Text('App PIN'),
+            subtitle: const Text('Secure your app'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const PinScreen(isSetup: true),
+                ),
+              );
+            },
+          ),
           const Divider(),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,

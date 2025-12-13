@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:rafiq/features/pin/presentation/pin_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -106,6 +107,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildSettingsTile('Location', _location, Icons.location_on),
           _buildSettingsTile('Gender', _gender, Icons.wc),
           _buildSettingsTile('Madhab', _madhab, Icons.school),
+          const Divider(height: 32),
+          _buildSectionHeader('Security'),
+          ListTile(
+            leading: const Icon(Icons.lock, color: Colors.blue),
+            title: const Text('App PIN'),
+            subtitle: const Text('Secure app with a PIN'),
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const PinScreen(isSetup: true),
+                ),
+              );
+            },
+          ),
           const Divider(height: 32),
           _buildSectionHeader('Actions'),
           ListTile(

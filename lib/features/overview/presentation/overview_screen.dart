@@ -4,6 +4,7 @@ import 'package:flutter_islamic_icons/flutter_islamic_icons.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:table_calendar/table_calendar.dart';
 
 class OverviewScreen extends StatefulWidget {
   const OverviewScreen({super.key});
@@ -115,6 +116,39 @@ class _OverviewScreenState extends State<OverviewScreen> {
           ),
           const SizedBox(height: 16),
           _buildWeeklyChart(),
+          const SizedBox(height: 24),
+          Text(
+            'Monthly Progress',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: 16),
+          Card(
+            child: TableCalendar(
+              firstDay: DateTime.utc(2024, 1, 1),
+              lastDay: DateTime.utc(2030, 12, 31),
+              focusedDay: DateTime.now(),
+              calendarFormat: CalendarFormat.month,
+              headerStyle: const HeaderStyle(formatButtonVisible: false),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text('Challenges', style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 16),
+          _buildChallengeCard(
+            'Daily',
+            'Pray all 5 prayers',
+            _todayPrayersDone / 5,
+          ),
+          _buildChallengeCard('Weekly', 'Read Surah Kahf', 0.0),
+          _buildChallengeCard(
+            'Monthly',
+            'Complete Quran',
+            _totalVersesRead / 6236,
+          ),
+          _buildChallengeCard('3-Month', 'Learn 10 Hadith', 0.2),
+          _buildChallengeCard('6-Month', 'Fast 6 days of Shawwal', 0.0),
+          _buildChallengeCard('9-Month', 'Memorize Juz Amma', 0.1),
+          _buildChallengeCard('12-Month', 'Perform Umrah', 0.0),
           const SizedBox(height: 24),
           Text(
             'Qada Debt Distribution',
@@ -281,6 +315,37 @@ class _OverviewScreenState extends State<OverviewScreen> {
       minHeight: 20,
       backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
       valueColor: AlwaysStoppedAnimation(Theme.of(context).colorScheme.primary),
+    );
+  }
+
+  Widget _buildChallengeCard(String period, String title, double progress) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  period,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blue,
+                  ),
+                ),
+                Text('${(progress * 100).toInt()}%'),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(title, style: const TextStyle(fontSize: 16)),
+            const SizedBox(height: 8),
+            LinearProgressIndicator(value: progress.clamp(0.0, 1.0)),
+          ],
+        ),
+      ),
     );
   }
 }

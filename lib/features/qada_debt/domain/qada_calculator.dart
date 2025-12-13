@@ -8,13 +8,25 @@ class QadaCalculator {
     required int yearsMissed,
     int monthsMissed = 0,
     int daysMissed = 0,
+    String gender = 'Male',
+    bool hasMenstruation = false,
+    int menstruationDuration = 7,
   }) {
     // 1 Lunar Year = 354 days
-    // 1 Lunar Month = 29.5 days (approx 30 for safety or 29) - let's use 30 for safety or 29.5
-    // Actually, user said "assume lunar years".
-
     int totalDays =
         (yearsMissed * daysInLunarYear) + (monthsMissed * 29) + daysMissed;
+
+    // Subtract menstruation days
+    if ((gender == 'Female' || gender == 'Girl' || gender == 'Woman') &&
+        hasMenstruation) {
+      // Approximate months in the missed period
+      double totalMonths = totalDays / 29.5;
+      int totalMenstruationDays = (totalMonths * menstruationDuration).round();
+      totalDays -= totalMenstruationDays;
+    }
+
+    if (totalDays < 0) totalDays = 0;
+
     int totalPrayersPerType = totalDays; // 1 of each type per day
 
     return {
@@ -23,9 +35,7 @@ class QadaCalculator {
       'Asr': totalPrayersPerType,
       'Maghrib': totalPrayersPerType,
       'Isha': totalPrayersPerType,
-      'Witr':
-          totalPrayersPerType, // Witr is Wajib in Hanafi, maybe optional? User didn't specify Witr but usually Qada includes it for Hanafis.
-      // I'll stick to 5 fardh for now unless configured.
+      'Witr': totalPrayersPerType,
     };
   }
 

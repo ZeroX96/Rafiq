@@ -126,28 +126,38 @@ class _DailyPrayerScreenState extends ConsumerState<DailyPrayerScreen> {
     });
   }
 
+  Map<String, double> _prayerConsistency = {};
+
   Future<void> _loadWeeklyProgress() async {
     final prefs = await SharedPreferences.getInstance();
     List<int> progress = [];
+    Map<String, int> counts = {
+      'Fajr': 0,
+      'Sunrise': 0,
+      'Dhuhr': 0,
+      'Asr': 0,
+      'Maghrib': 0,
+      'Isha': 0,
+      'Shafaa': 0,
+      'Witr': 0,
+    };
+
     for (int i = 6; i >= 0; i--) {
       final date = DateTime.now().subtract(Duration(days: i));
       final dateKey = DateFormat('yyyy-MM-dd').format(date);
       int count = 0;
-      for (String prayer in [
-        'Fajr',
-        'Sunrise',
-        'Dhuhr',
-        'Asr',
-        'Maghrib',
-        'Isha',
-        'Shafaa',
-        'Witr',
-      ]) {
-        if (prefs.getBool('prayer_${dateKey}_$prayer') ?? false) count++;
+      for (String prayer in counts.keys) {
+        if (prefs.getBool('prayer_${dateKey}_$prayer') ?? false) {
+          count++;
+          counts[prayer] = counts[prayer]! + 1;
+        }
       }
       progress.add(count);
     }
-    setState(() => _weeklyProgress = progress);
+    setState(() {
+      _weeklyProgress = progress;
+      _prayerConsistency = counts.map((k, v) => MapEntry(k, v / 7.0));
+    });
   }
 
   String _getRank(int score) {
@@ -244,6 +254,22 @@ class _DailyPrayerScreenState extends ConsumerState<DailyPrayerScreen> {
                   ),
                   const SizedBox(height: 16),
                   _buildWeeklyChart(),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Prayer Consistency (Last 7 Days)',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 16),
+                  Wrap(
+                    spacing: 16,
+                    runSpacing: 16,
+                    alignment: WrapAlignment.center,
+                    children:
+                        _prayerConsistency.entries
+                            .map((e) => _buildConsistencyItem(e.key, e.value))
+                            .toList(),
+                  ),
+                  const SizedBox(height: 32),
                 ],
               ),
     );
@@ -561,6 +587,44 @@ class _DailyPrayerScreenState extends ConsumerState<DailyPrayerScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildConsistencyItem(String label, double progress) {
+    return Column(
+      children: [
+        SizedBox(
+          height: 60,
+          width: 60,
+          child: Stack(
+            children: [
+              Center(
+                child: SizedBox(
+                  height: 60,
+                  width: 60,
+                  child: CircularProgressIndicator(
+                    value: progress,
+                    backgroundColor: Colors.grey.shade200,
+                    color: Theme.of(context).colorScheme.primary,
+                    strokeWidth: 6,
+                  ),
+                ),
+              ),
+              Center(
+                child: Text(
+                  '${(progress * 100).toInt()}%',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(label, style: const TextStyle(fontSize: 12)),
+      ],
     );
   }
 }

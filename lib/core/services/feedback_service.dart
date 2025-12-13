@@ -1,9 +1,6 @@
 import 'package:flutter/services.dart';
-import 'package:audioplayers/audioplayers.dart';
 
 class FeedbackService {
-  static final AudioPlayer _player = AudioPlayer();
-
   /// Light haptic feedback for button taps
   static void lightTap() {
     HapticFeedback.lightImpact();
@@ -31,29 +28,17 @@ class FeedbackService {
 
   /// Play success sound
   static Future<void> playSuccess() async {
-    try {
-      await _player.play(AssetSource('sounds/success.mp3'));
-    } catch (e) {
-      // Fallback to haptic if audio fails
-      heavyTap();
-    }
+    await SystemSound.play(SystemSoundType.click);
   }
 
   /// Play click sound
   static Future<void> playClick() async {
-    try {
-      await _player.play(AssetSource('sounds/click.mp3'));
-    } catch (e) {
-      lightTap();
-    }
+    await SystemSound.play(SystemSoundType.click);
   }
 
   /// Play error sound
   static Future<void> playError() async {
-    try {
-      await _player.play(AssetSource('sounds/error.mp3'));
-    } catch (e) {
-      errorVibrate();
-    }
+    await SystemSound.play(SystemSoundType.click);
+    errorVibrate();
   }
 }
