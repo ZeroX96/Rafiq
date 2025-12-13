@@ -1,4 +1,6 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_islamic_icons/flutter_islamic_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -21,7 +23,36 @@ class _QadaDebtScreenState extends ConsumerState<QadaDebtScreen> {
     'Isha': 0,
     'Witr': 0,
   };
+  Map<String, int> _originalDebt = {
+    'Fajr': 0,
+    'Dhuhr': 0,
+    'Asr': 0,
+    'Maghrib': 0,
+    'Isha': 0,
+    'Witr': 0,
+  };
   bool _hideDebt = false;
+
+  final List<Map<String, String>> _quotes = [
+    {
+      'text':
+          'The first thing for which a person will be brought to account on the Day of Resurrection will be his prayer.',
+      'source': 'Sunan an-Nasa\'i 465',
+    },
+    {
+      'text': 'Between a man and shirk and kufr is neglecting the prayer.',
+      'source': 'Sahih Muslim 82',
+    },
+    {
+      'text': 'Whoever misses a prayer, let him make it up when he remembers.',
+      'source': 'Bukhari & Muslim',
+    },
+    {
+      'text':
+          'The covenant between us and them is the prayer; whoever leaves it has disbelieved.',
+      'source': 'Tirmidhi 2621',
+    },
+  ];
 
   @override
   void initState() {
@@ -39,7 +70,6 @@ class _QadaDebtScreenState extends ConsumerState<QadaDebtScreen> {
       loadedDebt[prayer] = prefs.getInt('qada_debt_$prayer') ?? 0;
     }
 
-    // If debt is empty (first run), calculate from profile
     if (loadedDebt.values.every((v) => v == 0) && profile != null) {
       final calculator = QadaCalculator();
       final calculated = calculator.calculateDebtFromProfile(
@@ -49,7 +79,6 @@ class _QadaDebtScreenState extends ConsumerState<QadaDebtScreen> {
         hasMenstruation: profile['gender'] == 'Female',
       );
       loadedDebt = calculated;
-      // Save initial calculated debt
       for (var entry in loadedDebt.entries) {
         await prefs.setInt('qada_debt_${entry.key}', entry.value);
       }
@@ -57,6 +86,7 @@ class _QadaDebtScreenState extends ConsumerState<QadaDebtScreen> {
 
     setState(() {
       _debt = loadedDebt;
+      _originalDebt = Map.from(loadedDebt);
     });
   }
 
@@ -68,23 +98,29 @@ class _QadaDebtScreenState extends ConsumerState<QadaDebtScreen> {
   }
 
   void _decrement(String prayer) {
+    HapticFeedback.lightImpact();
     setState(() {
-      if (_debt[prayer]! > 0) {
-        _debt[prayer] = _debt[prayer]! - 1;
-      }
+      if (_debt[prayer]! > 0) _debt[prayer] = _debt[prayer]! - 1;
     });
     _saveDebt();
   }
 
   void _increment(String prayer) {
-    setState(() {
-      _debt[prayer] = _debt[prayer]! + 1;
-    });
+    HapticFeedback.lightImpact();
+    setState(() => _debt[prayer] = _debt[prayer]! + 1);
     _saveDebt();
   }
 
+  int get _totalDebt => _debt.values.fold(0, (a, b) => a + b);
+  int get _totalOriginal => _originalDebt.values.fold(0, (a, b) => a + b);
+  double get _paidPercentage =>
+      _totalOriginal > 0
+          ? ((_totalOriginal - _totalDebt) / _totalOriginal * 100).clamp(0, 100)
+          : 0;
+
   @override
   Widget build(BuildContext context) {
+    final quote = _quotes[DateTime.now().day % _quotes.length];
     return Scaffold(
       appBar: AppBar(
         title: const Text('Qada Debt'),
@@ -99,7 +135,9 @@ class _QadaDebtScreenState extends ConsumerState<QadaDebtScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          _buildMotivationalCard(),
+          _buildQuoteCard(quote),
+          const SizedBox(height: 16),
+          _buildProgressChart(),
           const SizedBox(height: 16),
           ..._debt.entries.map((entry) => _buildDebtTile(entry)).toList(),
         ],
@@ -107,7 +145,7 @@ class _QadaDebtScreenState extends ConsumerState<QadaDebtScreen> {
     );
   }
 
-  Widget _buildMotivationalCard() {
+  Widget _buildQuoteCard(Map<String, String> quote) {
     return Card(
       color: Theme.of(context).colorScheme.tertiaryContainer,
       child: Padding(
@@ -117,27 +155,80 @@ class _QadaDebtScreenState extends ConsumerState<QadaDebtScreen> {
             Row(
               children: [
                 Icon(
-                  Icons.warning_amber_rounded,
+                  Icons.format_quote,
                   color: Theme.of(context).colorScheme.onTertiaryContainer,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Reminder: The first thing we are asked about on the Day of Judgment is our Salah.',
+                    quote['text']!,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: Theme.of(context).colorScheme.onTertiaryContainer,
-                      fontWeight: FontWeight.bold,
+                      fontStyle: FontStyle.italic,
                     ),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 8),
-            Text(
-              'Make up your missed prayers to purify your soul.',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onTertiaryContainer,
+            Align(
+              alignment: Alignment.centerRight,
+              child: Text(
+                '- ${quote['source']}',
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onTertiaryContainer,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProgressChart() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Text(
+              'Overall Progress',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 150,
+              child: PieChart(
+                PieChartData(
+                  sectionsSpace: 2,
+                  centerSpaceRadius: 40,
+                  sections: [
+                    PieChartSectionData(
+                      value: _paidPercentage,
+                      color: Colors.green,
+                      title: '${_paidPercentage.toStringAsFixed(0)}%',
+                      radius: 40,
+                      titleStyle: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    PieChartSectionData(
+                      value: 100 - _paidPercentage,
+                      color: Colors.grey.shade300,
+                      title: '',
+                      radius: 40,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Remaining: $_totalDebt prayers',
+              style: Theme.of(context).textTheme.bodySmall,
             ),
           ],
         ),
@@ -147,7 +238,7 @@ class _QadaDebtScreenState extends ConsumerState<QadaDebtScreen> {
 
   Widget _buildDebtTile(MapEntry<String, int> entry) {
     return InkWell(
-      onTap: () => _decrement(entry.key), // Entire card is tappable
+      onTap: () => _decrement(entry.key),
       borderRadius: BorderRadius.circular(12),
       child: Card(
         margin: const EdgeInsets.symmetric(vertical: 8),
@@ -172,7 +263,7 @@ class _QadaDebtScreenState extends ConsumerState<QadaDebtScreen> {
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                       Text(
-                        'Tap anywhere to mark one done',
+                        'Tap to mark one done',
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                     ],

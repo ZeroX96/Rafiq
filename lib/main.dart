@@ -7,6 +7,7 @@ import 'package:rafiq/features/qada_debt/presentation/qada_debt_screen.dart';
 import 'package:rafiq/features/quran_hadith/presentation/quran_hadith_screen.dart';
 import 'package:rafiq/features/azkar/presentation/azkar_screen.dart';
 import 'package:rafiq/features/overview/presentation/overview_screen.dart';
+import 'package:rafiq/features/settings/presentation/settings_screen.dart';
 import 'package:rafiq/features/onboarding/presentation/onboarding_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -61,6 +62,10 @@ final _router = GoRouter(
         GoRoute(
           path: '/overview',
           builder: (context, state) => const OverviewScreen(),
+        ),
+        GoRoute(
+          path: '/settings',
+          builder: (context, state) => const SettingsScreen(),
         ),
       ],
     ),
@@ -150,18 +155,32 @@ class _ScaffoldWithNavBarState extends State<ScaffoldWithNavBar> {
           _onItemTapped(index, context);
           _pageController.jumpToPage(index);
         },
-        destinations: const [
+        destinations: [
           NavigationDestination(
-            icon: Icon(Icons.access_time),
+            icon: Icon(Icons.access_time, color: Colors.blue.shade300),
+            selectedIcon: Icon(Icons.access_time, color: Colors.blue),
             label: 'Prayers',
           ),
-          NavigationDestination(icon: Icon(Icons.history), label: 'Qada'),
-          NavigationDestination(icon: Icon(Icons.book), label: 'Quran'),
           NavigationDestination(
-            icon: Icon(Icons.filter_vintage),
+            icon: Icon(Icons.history, color: Colors.orange.shade300),
+            selectedIcon: Icon(Icons.history, color: Colors.orange),
+            label: 'Qada',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.book, color: Colors.green.shade300),
+            selectedIcon: Icon(Icons.book, color: Colors.green),
+            label: 'Quran',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.filter_vintage, color: Colors.purple.shade300),
+            selectedIcon: Icon(Icons.filter_vintage, color: Colors.purple),
             label: 'Azkar',
           ),
-          NavigationDestination(icon: Icon(Icons.person), label: 'Overview'),
+          NavigationDestination(
+            icon: Icon(Icons.person, color: Colors.teal.shade300),
+            selectedIcon: Icon(Icons.person, color: Colors.teal),
+            label: 'Overview',
+          ),
         ],
       ),
     );

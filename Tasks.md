@@ -71,3 +71,35 @@ Security & Settings
  UI Polish
  Switch to Muslim-themed Icons
  Add Quran Verse/Text to All Screens
+
+ Rafiq App Development Task List - Phase 3
+ Previous Phases (Onboarding, Gamification, Qada, Quran, Azkar, Overview)
+ Phase 3: Bug Fixes & Enhancements
+ Haptics & Sound Feedback
+ Add haptic feedback on button taps
+ Add sound for steps/clicks
+ Add alert sound for validation errors
+ Onboarding Fixes
+ Fix +/- buttons in Summary step
+ Fix Edit PIN button (not working)
+ Daily Prayer
+ Include Sunrise as checkable prayer
+ Change icon/stars based on score
+ Real-time weekly chart update (no tab switch needed)
+ Daily Verse: Add prev/next buttons
+ Daily Verse: Click navigates to Quran tab location
+ Tab Icons
+ Make nav bar icons colorful
+ Qada Tab
+ Add charts (progress visualization)
+ Add supporting Quran/Hadith quotes
+ Hadith Tab
+ Implement actual Hadith content (API or bundled JSON)
+ Azkar Tab
+ Allow rename/edit target/delete
+ Fix reminder notifications (not triggering)
+ Allow multiple reminders
+ PIN Lock
+ App should start with PIN prompt
+ Settings
+ Make Overview Settings button functional

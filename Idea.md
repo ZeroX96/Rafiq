@@ -140,3 +140,19 @@ in the azkar tab, add an overall counter so even if the counter of each azkar is
 again also fix the overview, in the overview the user can go to settings to update any of his settings or setup done before and put three types of charts
 
 and also ad a widget within the app to be added in the home screen to show the user overview
+
+add haptics and sound feedback for each step and click and if mistake in name or somthing else with alert sound tone
+the edit pin and +/- buttons do'snt work in the setup summary tab, fix this
+include the sunrise check in the daily prayers so the user can click if he prayed it.
+as the daily score changes, change the icon with the name and put some stars for scoring
+in the weekly progress make the calculation real-time, i pressed sala of 3 times and no changes happened, untill i went to another tab and came back then the chart changed
+in the daily verses, make it possible to go next or last verses with buttons lift and right of it
+make the tabs icons colorful
+in the qada tab put charts and supporting qouots
+the hadith tab still empty not working and useless, fix this
+in the azkar tab, allow user to rename, edit count target or delete
+the azkar reminder also not working, i set a specific time yes but ddnt remind me or make any notification
+and also user can make multiple reminders
+the app starts without a pin, fix it
+settings in the overiew tab not working says coming soon
+also if i click the daily verses i should go to its location in the quran tab

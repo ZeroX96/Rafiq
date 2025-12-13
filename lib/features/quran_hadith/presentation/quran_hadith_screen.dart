@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_islamic_icons/flutter_islamic_icons.dart';
 import 'package:quran/quran.dart' as quran;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -13,6 +14,100 @@ class QuranHadithScreen extends StatefulWidget {
 class _QuranHadithScreenState extends State<QuranHadithScreen> {
   int _totalVersesRead = 0;
 
+  // Static Hadith Collection (Forty Hadith an-Nawawi)
+  final List<Map<String, String>> _hadithList = [
+    {
+      'number': '1',
+      'title': 'Actions are by Intentions',
+      'text':
+          'Actions are but by intentions, and every person will have only what they intended...',
+      'source': 'Bukhari & Muslim',
+    },
+    {
+      'number': '2',
+      'title': 'Hadith of Jibreel',
+      'text':
+          'Inform me about Islam. He said: Islam is to testify that there is no deity worthy of worship except Allah...',
+      'source': 'Muslim',
+    },
+    {
+      'number': '3',
+      'title': 'Pillars of Islam',
+      'text':
+          'Islam is built upon five: testimony that there is no god but Allah, establishing prayer, giving zakat...',
+      'source': 'Bukhari & Muslim',
+    },
+    {
+      'number': '4',
+      'title': 'Creation in the Womb',
+      'text':
+          'Each one of you is constituted in the womb of the mother for forty days...',
+      'source': 'Bukhari & Muslim',
+    },
+    {
+      'number': '5',
+      'title': 'Rejected Deeds',
+      'text':
+          'Whoever introduces into this affair of ours that which is not from it, it is rejected.',
+      'source': 'Bukhari & Muslim',
+    },
+    {
+      'number': '6',
+      'title': 'Halal and Haram',
+      'text':
+          'The halal is clear and the haram is clear, and between them are matters unclear...',
+      'source': 'Bukhari & Muslim',
+    },
+    {
+      'number': '7',
+      'title': 'Religion is Sincerity',
+      'text':
+          'The religion is sincerity. We said: To whom? He said: To Allah, His Book, His Messenger, the leaders of the Muslims and their common folk.',
+      'source': 'Muslim',
+    },
+    {
+      'number': '8',
+      'title': 'Sanctity of a Muslim',
+      'text':
+          'I have been ordered to fight against the people until they testify that there is no deity worthy of worship except Allah...',
+      'source': 'Bukhari & Muslim',
+    },
+    {
+      'number': '9',
+      'title': 'Obligations',
+      'text':
+          'What I have forbidden you from, avoid it. And what I have commanded you to do, do as much of it as you can...',
+      'source': 'Bukhari & Muslim',
+    },
+    {
+      'number': '10',
+      'title': 'Pure Earnings',
+      'text': 'Allah is pure and accepts only that which is pure...',
+      'source': 'Muslim',
+    },
+    {
+      'number': '11',
+      'title': 'Leaving Doubtful Matters',
+      'text':
+          'Leave that which makes you doubt for that which does not make you doubt.',
+      'source': 'Tirmidhi & Nasa\'i',
+    },
+    {
+      'number': '12',
+      'title': 'Leave What Does Not Concern You',
+      'text':
+          'Part of the perfection of one\'s Islam is leaving that which does not concern him.',
+      'source': 'Tirmidhi',
+    },
+    {
+      'number': '13',
+      'title': 'None of You Believes',
+      'text':
+          'None of you truly believes until he loves for his brother what he loves for himself.',
+      'source': 'Bukhari & Muslim',
+    },
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -21,9 +116,9 @@ class _QuranHadithScreenState extends State<QuranHadithScreen> {
 
   Future<void> _loadTotalVersesRead() async {
     final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _totalVersesRead = prefs.getInt('quran_total_verses_read') ?? 0;
-    });
+    setState(
+      () => _totalVersesRead = prefs.getInt('quran_total_verses_read') ?? 0,
+    );
   }
 
   @override
@@ -33,19 +128,21 @@ class _QuranHadithScreenState extends State<QuranHadithScreen> {
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Quran & Hadith'),
-          bottom: const TabBar(
+          bottom: TabBar(
+            indicatorColor: Theme.of(context).colorScheme.primary,
             tabs: [
-              Tab(text: 'Quran', icon: Icon(FlutterIslamicIcons.quran)),
-              Tab(text: 'Hadith', icon: Icon(Icons.menu_book)),
+              Tab(
+                text: 'Quran',
+                icon: Icon(FlutterIslamicIcons.quran, color: Colors.green),
+              ),
+              Tab(
+                text: 'Hadith',
+                icon: Icon(Icons.menu_book, color: Colors.amber),
+              ),
             ],
           ),
         ),
-        body: TabBarView(
-          children: [
-            _buildQuranTab(),
-            const Center(child: Text('Hadith Collections (Coming Soon)')),
-          ],
-        ),
+        body: TabBarView(children: [_buildQuranTab(), _buildHadithTab()]),
       ),
     );
   }
@@ -53,7 +150,6 @@ class _QuranHadithScreenState extends State<QuranHadithScreen> {
   Widget _buildQuranTab() {
     return Column(
       children: [
-        // Total Verses Read Summary
         Container(
           padding: const EdgeInsets.all(16),
           color: Theme.of(context).colorScheme.primaryContainer,
@@ -111,6 +207,48 @@ class _QuranHadithScreenState extends State<QuranHadithScreen> {
     );
   }
 
+  Widget _buildHadithTab() {
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: _hadithList.length,
+      itemBuilder: (context, index) {
+        final hadith = _hadithList[index];
+        return Card(
+          margin: const EdgeInsets.only(bottom: 16),
+          child: ExpansionTile(
+            leading: CircleAvatar(
+              backgroundColor: Colors.amber,
+              child: Text(
+                hadith['number']!,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            title: Text(
+              hadith['title']!,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            subtitle: Text(
+              hadith['source']!,
+              style: Theme.of(context).textTheme.labelSmall,
+            ),
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  hadith['text']!,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   void _openSurah(BuildContext context, int surahNumber) {
     Navigator.push(
       context,
@@ -157,6 +295,7 @@ class _SurahDetailPageState extends State<_SurahDetailPage> {
   }
 
   Future<void> _toggleRead(int verseNumber) async {
+    HapticFeedback.lightImpact();
     final prefs = await SharedPreferences.getInstance();
     final currentStatus = _readStatus[verseNumber] ?? false;
     final newStatus = !currentStatus;
@@ -166,13 +305,11 @@ class _SurahDetailPageState extends State<_SurahDetailPage> {
       newStatus,
     );
 
-    // Update total count
     int total = prefs.getInt('quran_total_verses_read') ?? 0;
-    if (newStatus) {
+    if (newStatus)
       total++;
-    } else {
+    else
       total--;
-    }
     await prefs.setInt('quran_total_verses_read', total);
 
     setState(() => _readStatus[verseNumber] = newStatus);
