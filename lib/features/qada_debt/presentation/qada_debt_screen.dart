@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_islamic_icons/flutter_islamic_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rafiq/core/services/settings_service.dart';
 import 'package:rafiq/features/qada_debt/domain/qada_calculator.dart';
@@ -11,7 +12,6 @@ class QadaDebtScreen extends ConsumerStatefulWidget {
 }
 
 class _QadaDebtScreenState extends ConsumerState<QadaDebtScreen> {
-  // Mock data for MVP - In real app, this comes from Drift DB
   Map<String, int> _debt = {
     'Fajr': 0,
     'Dhuhr': 0,
@@ -20,6 +20,7 @@ class _QadaDebtScreenState extends ConsumerState<QadaDebtScreen> {
     'Isha': 0,
     'Witr': 0,
   };
+  bool _hideDebt = false;
 
   @override
   void initState() {
@@ -28,11 +29,6 @@ class _QadaDebtScreenState extends ConsumerState<QadaDebtScreen> {
   }
 
   Future<void> _loadDebt() async {
-    // In a real app, this would come from the DB.
-    // For now, we'll recalculate it from settings to simulate persistence
-    // or just show the manual values if we had a DB.
-    // Let's try to calculate it from profile if it's zero.
-
     final settings = ref.read(settingsServiceProvider);
     final profile = await settings.getProfile();
 
@@ -65,73 +61,140 @@ class _QadaDebtScreenState extends ConsumerState<QadaDebtScreen> {
     });
   }
 
+  IconData _getIcon(String prayer) {
+    // Using solidMosque as a generic icon for now to avoid build errors
+    // Ideally we would use specific icons if available in the package
+    return FlutterIslamicIcons.solidMosque;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Qada Debt')),
+      appBar: AppBar(
+        title: const Text('Qada Debt'),
+        actions: [
+          IconButton(
+            icon: Icon(_hideDebt ? Icons.visibility_off : Icons.visibility),
+            onPressed: () => setState(() => _hideDebt = !_hideDebt),
+            tooltip: _hideDebt ? 'Show Debt' : 'Hide Debt',
+          ),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
-        children:
-            _debt.entries.map((entry) {
-              return Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        entry.key,
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      Row(
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.remove_circle_outline),
-                            onPressed: () => _decrement(entry.key),
-                          ),
-                          SizedBox(
-                            width: 40,
-                            child: Text(
-                              entry.value.toString(),
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 18,
-                              ),
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.add_circle_outline),
-                            onPressed: () => _increment(entry.key),
-                          ),
-                        ],
-                      ),
-                    ],
+        children: [
+          _buildMotivationalCard(),
+          const SizedBox(height: 16),
+          ..._debt.entries.map((entry) => _buildDebtTile(entry)).toList(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMotivationalCard() {
+    return Card(
+      color: Theme.of(context).colorScheme.tertiaryContainer,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.warning_amber_rounded,
+                  color: Theme.of(context).colorScheme.onTertiaryContainer,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Reminder: The first thing we are asked about on the Day of Judgment is our Salah.',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onTertiaryContainer,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
-              );
-            }).toList(),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Make up your missed prayers to purify your soul.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onTertiaryContainer,
+              ),
+            ),
+          ],
+        ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          // Show calculator dialog
-          showDialog(
-            context: context,
-            builder:
-                (context) => AlertDialog(
-                  title: const Text('Calculate Qada'),
-                  content: const Text('Calculator feature coming soon!'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('OK'),
+    );
+  }
+
+  Widget _buildDebtTile(MapEntry<String, int> entry) {
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      _getIcon(entry.key),
+                      size: 28,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      entry.key,
+                      style: Theme.of(context).textTheme.titleLarge,
                     ),
                   ],
                 ),
-          );
-        },
-        label: const Text('Calculate'),
-        icon: const Icon(Icons.calculate),
+                if (!_hideDebt)
+                  Text(
+                    entry.value.toString(),
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  )
+                else
+                  Text(
+                    'HIDDEN',
+                    style: Theme.of(
+                      context,
+                    ).textTheme.titleMedium?.copyWith(color: Colors.grey),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => _decrement(entry.key),
+                    icon: const Icon(Icons.check),
+                    label: const Text('Prayed One'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor:
+                          Theme.of(context).colorScheme.primaryContainer,
+                      foregroundColor:
+                          Theme.of(context).colorScheme.onPrimaryContainer,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  onPressed: () => _increment(entry.key),
+                  icon: const Icon(Icons.add),
+                  tooltip: 'Add Debt',
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

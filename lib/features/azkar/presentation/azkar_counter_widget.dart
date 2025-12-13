@@ -5,12 +5,14 @@ class AzkarCounterWidget extends StatefulWidget {
   final int initialCount;
   final int target;
   final VoidCallback? onTargetReached;
+  final ValueChanged<int>? onCountChanged;
 
   const AzkarCounterWidget({
     super.key,
     this.initialCount = 0,
     this.target = 100,
     this.onTargetReached,
+    this.onCountChanged,
   });
 
   @override
@@ -30,6 +32,7 @@ class _AzkarCounterWidgetState extends State<AzkarCounterWidget> {
     setState(() {
       _count++;
     });
+    widget.onCountChanged?.call(_count);
     HapticFeedback.mediumImpact();
     SystemSound.play(SystemSoundType.click);
 
@@ -43,6 +46,7 @@ class _AzkarCounterWidgetState extends State<AzkarCounterWidget> {
     setState(() {
       _count = 0;
     });
+    widget.onCountChanged?.call(0);
     HapticFeedback.selectionClick();
   }
 

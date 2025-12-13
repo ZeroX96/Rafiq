@@ -1,7 +1,10 @@
 import 'package:adhan/adhan.dart';
+// import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_islamic_icons/flutter_islamic_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:quran/quran.dart' as quran;
 import 'package:rafiq/core/services/settings_service.dart';
 
 class DailyPrayerScreen extends ConsumerStatefulWidget {
@@ -16,10 +19,17 @@ class _DailyPrayerScreenState extends ConsumerState<DailyPrayerScreen> {
   bool _isLoading = true;
   String _cityName = 'Loading...';
 
+  // Gamification State
+  int _dailyScore = 0;
+  String _rank = 'Muslim';
+  // Mock data: Mon-Sun (0-5 prayers)
+  final List<int> _weeklyProgress = [3, 4, 5, 2, 5, 4, 0];
+
   @override
   void initState() {
     super.initState();
     _loadPrayerTimes();
+    _calculateScore();
   }
 
   Future<void> _loadPrayerTimes() async {
@@ -46,6 +56,24 @@ class _DailyPrayerScreenState extends ConsumerState<DailyPrayerScreen> {
     }
   }
 
+  void _calculateScore() {
+    // Mock logic: In a real app, this would calculate based on actual checked prayers from DB
+    // For now, let's assume 3 prayers done today
+    int prayersDone = 3;
+    setState(() {
+      _dailyScore = (prayersDone / 5 * 100).round();
+      _rank = _getRank(_dailyScore);
+    });
+  }
+
+  String _getRank(int score) {
+    if (score >= 100) return 'Mumin';
+    if (score >= 80) return 'Hafiz';
+    if (score >= 60) return 'Imam';
+    if (score >= 40) return 'Muadhin';
+    return 'Muslim';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -68,22 +96,165 @@ class _DailyPrayerScreenState extends ConsumerState<DailyPrayerScreen> {
               : ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  _buildPrayerTile('Fajr', _prayerTimes!.fajr),
+                  _buildScoreCard(),
+                  const SizedBox(height: 16),
+                  _buildDailyVerse(),
+                  const SizedBox(height: 16),
+                  _buildPrayerTile(
+                    'Fajr',
+                    _prayerTimes!.fajr,
+                    icon: FlutterIslamicIcons.solidMosque,
+                  ),
                   _buildPrayerTile(
                     'Sunrise',
                     _prayerTimes!.sunrise,
                     isPrayer: false,
+                    icon: Icons.wb_sunny,
                   ),
-                  _buildPrayerTile('Dhuhr', _prayerTimes!.dhuhr),
-                  _buildPrayerTile('Asr', _prayerTimes!.asr),
-                  _buildPrayerTile('Maghrib', _prayerTimes!.maghrib),
-                  _buildPrayerTile('Isha', _prayerTimes!.isha),
+                  _buildPrayerTile(
+                    'Dhuhr',
+                    _prayerTimes!.dhuhr,
+                    icon: FlutterIslamicIcons.solidMosque,
+                  ),
+                  _buildPrayerTile(
+                    'Asr',
+                    _prayerTimes!.asr,
+                    icon: FlutterIslamicIcons.solidMosque,
+                  ),
+                  _buildPrayerTile(
+                    'Maghrib',
+                    _prayerTimes!.maghrib,
+                    icon: FlutterIslamicIcons.solidMosque,
+                  ),
+                  _buildPrayerTile(
+                    'Isha',
+                    _prayerTimes!.isha,
+                    icon: FlutterIslamicIcons.solidMosque,
+                  ),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Weekly Progress',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildWeeklyChart(),
                 ],
               ),
     );
   }
 
-  Widget _buildPrayerTile(String name, DateTime time, {bool isPrayer = true}) {
+  Widget _buildScoreCard() {
+    return Card(
+      color: Theme.of(context).colorScheme.primaryContainer,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Daily Score',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                Text(
+                  '$_dailyScore%',
+                  style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                  ),
+                ),
+              ],
+            ),
+            Column(
+              children: [
+                Icon(
+                  FlutterIslamicIcons.solidMosque,
+                  size: 48,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _rank,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDailyVerse() {
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  FlutterIslamicIcons.quran,
+                  size: 20,
+                  color: Theme.of(context).colorScheme.secondary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Daily Verse',
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    color: Theme.of(context).colorScheme.secondary,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              quran.getVerse(1, 1), // Al-Fatiha: 1
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontFamily: 'Amiri',
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              quran.getVerseTranslation(1, 1),
+              textAlign: TextAlign.center,
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(fontStyle: FontStyle.italic),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Surah Al-Fatiha (1:1)',
+              style: Theme.of(context).textTheme.labelSmall,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWeeklyChart() {
+    return const SizedBox(
+      height: 200,
+      child: Center(child: Text('Chart temporarily disabled')),
+    );
+  }
+
+  Widget _buildPrayerTile(
+    String name,
+    DateTime time, {
+    bool isPrayer = true,
+    required IconData icon,
+  }) {
     final formattedTime = DateFormat.jm().format(time);
     // Mock status for now - in real app, fetch from DB
     bool isPrayed = false;
@@ -94,7 +265,8 @@ class _DailyPrayerScreenState extends ConsumerState<DailyPrayerScreen> {
           margin: const EdgeInsets.symmetric(vertical: 8),
           child: ListTile(
             leading: Icon(
-              isPrayer ? Icons.access_time_filled : Icons.wb_sunny,
+              icon,
+              size: 32,
               color:
                   isPrayer
                       ? Theme.of(context).colorScheme.primary
@@ -112,6 +284,7 @@ class _DailyPrayerScreenState extends ConsumerState<DailyPrayerScreen> {
                       onChanged: (value) {
                         setState(() {
                           isPrayed = value ?? false;
+                          // Update score logic would go here
                         });
                       },
                     )
