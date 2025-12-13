@@ -20,6 +20,9 @@ final _router = GoRouter(
     final prefs = await SharedPreferences.getInstance();
     final bool onboardingCompleted =
         prefs.getBool('onboarding_completed') ?? false;
+    print(
+      'Redirect Check: Onboarding=$onboardingCompleted, Path=${state.uri.path}',
+    );
 
     if (!onboardingCompleted && state.uri.path != '/onboarding') {
       return '/onboarding';
@@ -80,17 +83,60 @@ class RafiqApp extends StatelessWidget {
   }
 }
 
-class ScaffoldWithNavBar extends StatelessWidget {
+class ScaffoldWithNavBar extends StatefulWidget {
   final Widget child;
   const ScaffoldWithNavBar({required this.child, super.key});
 
   @override
+  State<ScaffoldWithNavBar> createState() => _ScaffoldWithNavBarState();
+}
+
+class _ScaffoldWithNavBarState extends State<ScaffoldWithNavBar> {
+  late PageController _pageController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(
+      initialPage: _calculateSelectedIndex(context),
+    );
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant ScaffoldWithNavBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final index = _calculateSelectedIndex(context);
+    if (_pageController.hasClients && _pageController.page?.round() != index) {
+      _pageController.jumpToPage(index);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: child,
+      body: PageView(
+        controller: _pageController,
+        onPageChanged: (index) => _onItemTapped(index, context),
+        children: const [
+          DailyPrayerScreen(),
+          QadaDebtScreen(),
+          QuranHadithScreen(),
+          AzkarScreen(),
+          OverviewScreen(),
+        ],
+      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _calculateSelectedIndex(context),
-        onDestinationSelected: (int index) => _onItemTapped(index, context),
+        onDestinationSelected: (int index) {
+          _onItemTapped(index, context);
+          _pageController.jumpToPage(index);
+        },
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.access_time),
@@ -108,7 +154,7 @@ class ScaffoldWithNavBar extends StatelessWidget {
     );
   }
 
-  static int _calculateSelectedIndex(BuildContext context) {
+  int _calculateSelectedIndex(BuildContext context) {
     final String location = GoRouterState.of(context).uri.path;
     if (location.startsWith('/daily-prayer')) return 0;
     if (location.startsWith('/qada-debt')) return 1;
@@ -121,19 +167,19 @@ class ScaffoldWithNavBar extends StatelessWidget {
   void _onItemTapped(int index, BuildContext context) {
     switch (index) {
       case 0:
-        GoRouter.of(context).go('/daily-prayer');
+        context.go('/daily-prayer');
         break;
       case 1:
-        GoRouter.of(context).go('/qada-debt');
+        context.go('/qada-debt');
         break;
       case 2:
-        GoRouter.of(context).go('/quran-hadith');
+        context.go('/quran-hadith');
         break;
       case 3:
-        GoRouter.of(context).go('/azkar');
+        context.go('/azkar');
         break;
       case 4:
-        GoRouter.of(context).go('/overview');
+        context.go('/overview');
         break;
     }
   }

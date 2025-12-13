@@ -85,17 +85,40 @@ class _DailyPrayerScreenState extends ConsumerState<DailyPrayerScreen> {
 
   Widget _buildPrayerTile(String name, DateTime time, {bool isPrayer = true}) {
     final formattedTime = DateFormat.jm().format(time);
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      child: ListTile(
-        leading: Icon(
-          isPrayer ? Icons.access_time_filled : Icons.wb_sunny,
-          color:
-              isPrayer ? Theme.of(context).colorScheme.primary : Colors.orange,
-        ),
-        title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
-        trailing: Text(formattedTime, style: const TextStyle(fontSize: 16)),
-      ),
+    // Mock status for now - in real app, fetch from DB
+    bool isPrayed = false;
+
+    return StatefulBuilder(
+      builder: (context, setState) {
+        return Card(
+          margin: const EdgeInsets.symmetric(vertical: 8),
+          child: ListTile(
+            leading: Icon(
+              isPrayer ? Icons.access_time_filled : Icons.wb_sunny,
+              color:
+                  isPrayer
+                      ? Theme.of(context).colorScheme.primary
+                      : Colors.orange,
+            ),
+            title: Text(
+              name,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            subtitle: Text(formattedTime, style: const TextStyle(fontSize: 16)),
+            trailing:
+                isPrayer
+                    ? Checkbox(
+                      value: isPrayed,
+                      onChanged: (value) {
+                        setState(() {
+                          isPrayed = value ?? false;
+                        });
+                      },
+                    )
+                    : null,
+          ),
+        );
+      },
     );
   }
 }
