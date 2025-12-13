@@ -28,4 +28,51 @@ class QadaCalculator {
       // I'll stick to 5 fardh for now unless configured.
     };
   }
+
+  Map<String, int> calculateDebtFromProfile({
+    required DateTime dob,
+    required int pubertyAge,
+    required String gender,
+    required bool hasMenstruation,
+  }) {
+    final DateTime pubertyDate = DateTime(
+      dob.year + pubertyAge,
+      dob.month,
+      dob.day,
+    );
+    final DateTime now = DateTime.now();
+
+    if (now.isBefore(pubertyDate)) {
+      return {
+        'Fajr': 0,
+        'Dhuhr': 0,
+        'Asr': 0,
+        'Maghrib': 0,
+        'Isha': 0,
+        'Witr': 0,
+      };
+    }
+
+    final int totalDays = now.difference(pubertyDate).inDays;
+    int adjustedDays = totalDays;
+
+    // Subtract menstruation days for females (approx 7 days per month)
+    if (gender == 'Female' && hasMenstruation) {
+      // Approximate months passed
+      final double months = totalDays / 30.0;
+      final int menstruationDays = (months * 7).round();
+      adjustedDays -= menstruationDays;
+    }
+
+    if (adjustedDays < 0) adjustedDays = 0;
+
+    return {
+      'Fajr': adjustedDays,
+      'Dhuhr': adjustedDays,
+      'Asr': adjustedDays,
+      'Maghrib': adjustedDays,
+      'Isha': adjustedDays,
+      'Witr': adjustedDays,
+    };
+  }
 }

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:rafiq/core/services/settings_service.dart';
+import 'package:rafiq/features/qada_debt/domain/qada_calculator.dart';
 
 class QadaDebtScreen extends ConsumerStatefulWidget {
   const QadaDebtScreen({super.key});
@@ -10,7 +12,7 @@ class QadaDebtScreen extends ConsumerStatefulWidget {
 
 class _QadaDebtScreenState extends ConsumerState<QadaDebtScreen> {
   // Mock data for MVP - In real app, this comes from Drift DB
-  final Map<String, int> _debt = {
+  Map<String, int> _debt = {
     'Fajr': 0,
     'Dhuhr': 0,
     'Asr': 0,
@@ -18,6 +20,36 @@ class _QadaDebtScreenState extends ConsumerState<QadaDebtScreen> {
     'Isha': 0,
     'Witr': 0,
   };
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDebt();
+  }
+
+  Future<void> _loadDebt() async {
+    // In a real app, this would come from the DB.
+    // For now, we'll recalculate it from settings to simulate persistence
+    // or just show the manual values if we had a DB.
+    // Let's try to calculate it from profile if it's zero.
+
+    final settings = ref.read(settingsServiceProvider);
+    final profile = await settings.getProfile();
+
+    if (profile != null) {
+      final calculator = QadaCalculator();
+      final calculated = calculator.calculateDebtFromProfile(
+        dob: profile['dob'],
+        pubertyAge: profile['pubertyAge'],
+        gender: profile['gender'],
+        hasMenstruation: profile['gender'] == 'Female',
+      );
+
+      setState(() {
+        _debt = calculated;
+      });
+    }
+  }
 
   void _decrement(String prayer) {
     setState(() {
