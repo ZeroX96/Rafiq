@@ -9,6 +9,7 @@ pubspec.yaml
 Add fl_chart (re-add for mobile).
 Add quran (for Quran content).
 Add flutter_local_notifications (for Azkar reminders).
+Add flutter_islamic_icons (for Muslim icons).
 2. Daily Prayer Gamification
 [MODIFY] 
 daily_prayer_screen.dart
@@ -31,6 +32,12 @@ azkar_screen.dart
 Implement persistence for counters.
 Fix "+" button logic.
 Add reminder scheduling logic.
+6. UI Polish
+[MODIFY] 
+scaffold_with_nav_bar.dart
+ (or main.dart)
+Replace standard icons with flutter_islamic_icons (or similar assets).
+Add a "Daily Verse" or relevant Quran text widget to the top/bottom of the Scaffold.
 Verification Plan
 Manual Testing:
 Verify Score/Rank updates.
@@ -38,3 +45,4 @@ Verify Chart renders on mobile.
 Verify Qada UI changes and "Hide" toggle.
 Verify Quran content loads.
 Verify Azkar counters persist and reminders trigger.
+Verify new Icons and Quran text presence.
