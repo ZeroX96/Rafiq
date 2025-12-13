@@ -116,3 +116,27 @@ https://womenwhocode.com/blog/guarding-user-data-in-mobile-apps-best-practices-f
 https://apps.apple.com/us/app/azkar-%D8%A7%D8%B0%D9%83%D8%A7%D8%B1-athan-prayer/id1454509502
 [20] ‎Niya: Muslim prayer tracker App - App Store
 https://apps.apple.com/us/app/niya-muslim-prayer-tracker/id1668179563
+
+
+in the very begining, if i ddnt put any name or so it accepts and goes on, this is wrong
+the phone back button dosn't work
+enter button doent work, fix
+you dont ask about the femail period in which no pray required, fix this
+signing in shall be based on a gmail account thats valid, add this
+the overview tab is useles, its empty, no calculations and new additions are not reflected to counts, fix this
+in the very beginning during asking about the name, put a part of quran, and add hadith that the first thinr we will be asked is about salah. and put some supporting and energetic text quoutes of islamic scientests. during putting the user name, it can contain only alphabets no numbers or special characters.
+in the second screen put another collection of islamic text quran/hadith or so on. and include the worman period, and its usuall number of days so to be correctly calculated in the debt calculation
+in the age and puberty, put hadith that رُفِع القلمُ عنْ ثلاثةٍ عنِ الصغيرِ حتى يبلُغَ وعَنِ النائمِ حتى يستيقظَ وعنِ المصابِ حتى يُكشفَ عنهُ
+in the setup summarz no 5, allow the user to correct or change a calculation of the estimated debt
+
+after that in the prayers tab, the daily score is not correctly working, its const at 60% and also coorect and fix the weekly progress charts and add the shafaa and witr in daily prayers.
+
+in the qada tab, make the whole section is a button for each prayerso if a user clicked at any part of this area it's counted as done, and keep the pluss as option to fix if mestaken
+
+in the quran-hadith section its totally empty, no data, heck for an api to get the data from online. and in the quran tab next to each verses a check so the user can tick if he read it and count these in the top of the quran tab and in the overview tab to say you read 3004 verses since 12-2-2020 for exmaple
+
+in the azkar tab, add an overall counter so even if the counter of each azkar is reset, the overall keeps counting, this info to be shown also in the user overview. and fixthe add reminder button, its useless. so user can set a specific reminder at a specific time of his own need. the reminders can be shown in the user overview section
+
+again also fix the overview, in the overview the user can go to settings to update any of his settings or setup done before and put three types of charts
+
+and also ad a widget within the app to be added in the home screen to show the user overview

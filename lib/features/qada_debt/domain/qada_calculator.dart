@@ -34,6 +34,7 @@ class QadaCalculator {
     required int pubertyAge,
     required String gender,
     required bool hasMenstruation,
+    int menstruationDuration = 7,
   }) {
     final DateTime pubertyDate = DateTime(
       dob.year + pubertyAge,
@@ -56,12 +57,12 @@ class QadaCalculator {
     final int totalDays = now.difference(pubertyDate).inDays;
     int adjustedDays = totalDays;
 
-    // Subtract menstruation days for females (approx 7 days per month)
+    // Subtract menstruation days for females
     if (gender == 'Female' && hasMenstruation) {
       // Approximate months passed
       final double months = totalDays / 30.0;
-      final int menstruationDays = (months * 7).round();
-      adjustedDays -= menstruationDays;
+      final int totalMenstruationDays = (months * menstruationDuration).round();
+      adjustedDays -= totalMenstruationDays;
     }
 
     if (adjustedDays < 0) adjustedDays = 0;

@@ -19,10 +19,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   // Form Data
   final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final GlobalKey<FormState> _nameFormKey = GlobalKey<FormState>();
+
   String _gender = 'Male';
   String _madhab = 'Hanafi';
   DateTime _dob = DateTime(2000, 1, 1);
   int _pubertyAge = 13;
+  int _menstruationDuration = 7; // Default 7 days
   Map<String, dynamic>? _selectedCity;
 
   // Calculation Result
@@ -54,7 +58,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   void _nextPage() {
-    if (_currentPage < 4) {
+    if (_currentPage == 0) {
+      if (!_nameFormKey.currentState!.validate()) return;
+    }
+
+    if (_currentPage < 5) {
+      // Increased steps
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
@@ -65,14 +74,26 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     }
   }
 
+  void _previousPage() {
+    if (_currentPage > 0) {
+      _pageController.previousPage(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+      setState(() => _currentPage--);
+    }
+  }
+
   void _calculateDebt() {
     final calculator = QadaCalculator();
     final debt = calculator.calculateDebtFromProfile(
       dob: _dob,
       pubertyAge: _pubertyAge,
       gender: _gender,
-      hasMenstruation: _gender == 'Female', // Simple assumption for now
+      hasMenstruation: _gender == 'Female',
+      menstruationDuration: _menstruationDuration,
     );
+
     setState(() {
       _calculatedDebt = debt;
     });
@@ -100,7 +121,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       _selectedCity!['name'],
     );
 
-    // TODO: Save calculated debt to DB here (mock for now)
+    // Save email if needed (not in original profile but requested)
+    // await settings.saveEmail(_emailController.text);
 
     await settings.setOnboardingCompleted(true);
     if (mounted) context.go('/daily-prayer');
@@ -108,38 +130,76 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Setup Rafiq (${_currentPage + 1}/5)'),
-        leading:
-            _currentPage > 0
-                ? IconButton(
-                  icon: const Icon(Icons.arrow_back),
-                  onPressed: () {
-                    _pageController.previousPage(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
-                    );
-                    setState(() => _currentPage--);
-                  },
-                )
-                : null,
+    return WillPopScope(
+      onWillPop: () async {
+        if (_currentPage > 0) {
+          _previousPage();
+          return false;
+        }
+        return true;
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text('Setup Rafiq (${_currentPage + 1}/6)'),
+          leading:
+              _currentPage > 0
+                  ? IconButton(
+                    icon: const Icon(Icons.arrow_back),
+                    onPressed: _previousPage,
+                  )
+                  : null,
+        ),
+        body: PageView(
+          controller: _pageController,
+          physics: const NeverScrollableScrollPhysics(),
+          children: [
+            _buildNameStep(),
+            _buildGenderMadhabStep(),
+            _buildAgeStep(),
+            if (_gender == 'Female')
+              _buildMenstruationStep()
+            else
+              const SizedBox(), // Placeholder to keep index sync
+            _buildLocationStep(),
+            _buildSummaryStep(),
+          ],
+        ),
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: _nextPage,
+          label: Text(_currentPage == 5 ? 'Finish' : 'Next'),
+          icon: Icon(_currentPage == 5 ? Icons.check : Icons.arrow_forward),
+        ),
       ),
-      body: PageView(
-        controller: _pageController,
-        physics: const NeverScrollableScrollPhysics(),
+    );
+  }
+
+  Widget _buildQuoteCard(String text, String source) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 24),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+        ),
+      ),
+      child: Column(
         children: [
-          _buildNameStep(),
-          _buildGenderMadhabStep(),
-          _buildAgeStep(),
-          _buildLocationStep(),
-          _buildSummaryStep(),
+          Text(
+            text,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontStyle: FontStyle.italic, fontSize: 16),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '- $source',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _nextPage,
-        label: Text(_currentPage == 4 ? 'Finish' : 'Next'),
-        icon: Icon(_currentPage == 4 ? Icons.check : Icons.arrow_forward),
       ),
     );
   }
@@ -147,25 +207,57 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   Widget _buildNameStep() {
     return Padding(
       padding: const EdgeInsets.all(24.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Text(
-            'Welcome to Rafiq',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-          const Text('Let\'s start with your name.'),
-          const SizedBox(height: 24),
-          TextField(
-            controller: _nameController,
-            decoration: const InputDecoration(
-              labelText: 'Your Name',
-              border: OutlineInputBorder(),
+      child: Form(
+        key: _nameFormKey,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _buildQuoteCard(
+              "The first thing for which a person will be brought to account on the Day of Resurrection will be his prayer.",
+              "Sunan an-Nasa'i 465",
             ),
-            onSubmitted: (_) => _nextPage(),
-          ),
-        ],
+            const Text(
+              'Welcome to Rafiq',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            const Text('Let\'s start with your details.'),
+            const SizedBox(height: 24),
+            TextFormField(
+              controller: _nameController,
+              decoration: const InputDecoration(
+                labelText: 'Your Name',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.person),
+              ),
+              validator: (value) {
+                if (value == null || value.isEmpty)
+                  return 'Please enter your name';
+                if (!RegExp(r'^[a-zA-Z\s]+$').hasMatch(value))
+                  return 'Name must contain only alphabets';
+                return null;
+              },
+              onFieldSubmitted: (_) => _nextPage(),
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _emailController,
+              decoration: const InputDecoration(
+                labelText: 'Gmail Address',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.email),
+              ),
+              validator: (value) {
+                if (value == null || value.isEmpty)
+                  return 'Please enter your email';
+                if (!RegExp(r'^[a-zA-Z0-9._%+-]+@gmail\.com$').hasMatch(value))
+                  return 'Please enter a valid Gmail address';
+                return null;
+              },
+              onFieldSubmitted: (_) => _nextPage(),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -176,6 +268,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          _buildQuoteCard(
+            "Read the Quran, for it will come as an intercessor for its reciters on the Day of Resurrection.",
+            "Sahih Muslim 804",
+          ),
           const Text(
             'Personal Details',
             style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
@@ -217,6 +313,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          _buildQuoteCard(
+            "The Pen has been lifted from three: from the sleeping person until he wakes up, from the minor until he grows up, and from the insane person until he comes to his senses.",
+            "Sunan Abi Dawud 4403",
+          ),
           const Text(
             'Age & Puberty',
             style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
@@ -247,6 +347,37 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             divisions: 9,
             label: _pubertyAge.toString(),
             onChanged: (v) => setState(() => _pubertyAge = v.toInt()),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMenstruationStep() {
+    return Padding(
+      padding: const EdgeInsets.all(24.0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _buildQuoteCard(
+            "Allah does not burden a soul beyond that it can bear.",
+            "Quran 2:286",
+          ),
+          const Text(
+            'Cycle Duration',
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 16),
+          const Text('Average days per month to exclude from prayer debt.'),
+          const SizedBox(height: 24),
+          Text('Days: $_menstruationDuration'),
+          Slider(
+            value: _menstruationDuration.toDouble(),
+            min: 3,
+            max: 10,
+            divisions: 7,
+            label: _menstruationDuration.toString(),
+            onChanged: (v) => setState(() => _menstruationDuration = v.toInt()),
           ),
         ],
       ),
@@ -284,7 +415,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                 : null,
                         onTap: () {
                           setState(() => _selectedCity = city);
-                          _calculateDebt(); // Pre-calculate debt when location is picked (just to trigger logic)
+                          _calculateDebt();
                         },
                       );
                     },
@@ -295,7 +426,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   Widget _buildSummaryStep() {
-    _calculateDebt(); // Ensure debt is calculated
+    _calculateDebt();
     return Padding(
       padding: const EdgeInsets.all(24.0),
       child: Column(
@@ -309,9 +440,26 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           Text('Name: ${_nameController.text}'),
           Text('Location: ${_selectedCity?['name'] ?? "Not Selected"}'),
           const Divider(),
-          const Text(
-            'Estimated Qada Debt:',
-            style: TextStyle(fontWeight: FontWeight.bold),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Estimated Qada Debt:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              IconButton(
+                icon: const Icon(Icons.edit),
+                onPressed: () {
+                  // Allow manual edit logic here if needed
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('You can adjust debt in Qada tab later.'),
+                    ),
+                  );
+                },
+                tooltip: 'Edit Calculation',
+              ),
+            ],
           ),
           const SizedBox(height: 16),
           Expanded(
@@ -321,7 +469,35 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       .map(
                         (e) => ListTile(
                           title: Text(e.key),
-                          trailing: Text('${e.value} prayers'),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.remove_circle_outline,
+                                  size: 20,
+                                ),
+                                onPressed:
+                                    () => setState(() {
+                                      if (_calculatedDebt[e.key]! > 0)
+                                        _calculatedDebt[e.key] =
+                                            _calculatedDebt[e.key]! - 1;
+                                    }),
+                              ),
+                              Text('${e.value}'),
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.add_circle_outline,
+                                  size: 20,
+                                ),
+                                onPressed:
+                                    () => setState(() {
+                                      _calculatedDebt[e.key] =
+                                          _calculatedDebt[e.key]! + 1;
+                                    }),
+                              ),
+                            ],
+                          ),
                         ),
                       )
                       .toList(),

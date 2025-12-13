@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:quran/quran.dart' as quran;
 import 'package:rafiq/core/services/settings_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class DailyPrayerScreen extends ConsumerStatefulWidget {
   const DailyPrayerScreen({super.key});
@@ -19,17 +20,28 @@ class _DailyPrayerScreenState extends ConsumerState<DailyPrayerScreen> {
   bool _isLoading = true;
   String _cityName = 'Loading...';
 
+  // Prayer states (track which prayers have been marked as done today)
+  Map<String, bool> _prayerStatus = {
+    'Fajr': false,
+    'Dhuhr': false,
+    'Asr': false,
+    'Maghrib': false,
+    'Isha': false,
+    'Shafaa': false, // Added
+    'Witr': false, // Added
+  };
+
   // Gamification State
   int _dailyScore = 0;
   String _rank = 'Muslim';
-  // Mock data: Mon-Sun (0-5 prayers)
-  final List<int> _weeklyProgress = [3, 4, 5, 2, 5, 4, 0];
+  // Weekly progress from SharedPreferences (or mock for now)
+  List<int> _weeklyProgress = [0, 0, 0, 0, 0, 0, 0];
 
   @override
   void initState() {
     super.initState();
     _loadPrayerTimes();
-    _calculateScore();
+    _loadPrayerStatus();
   }
 
   Future<void> _loadPrayerTimes() async {
@@ -56,21 +68,76 @@ class _DailyPrayerScreenState extends ConsumerState<DailyPrayerScreen> {
     }
   }
 
-  void _calculateScore() {
-    // Mock logic: In a real app, this would calculate based on actual checked prayers from DB
-    // For now, let's assume 3 prayers done today
-    int prayersDone = 3;
+  Future<void> _loadPrayerStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+
     setState(() {
-      _dailyScore = (prayersDone / 5 * 100).round();
+      _prayerStatus = {
+        'Fajr': prefs.getBool('prayer_${today}_Fajr') ?? false,
+        'Dhuhr': prefs.getBool('prayer_${today}_Dhuhr') ?? false,
+        'Asr': prefs.getBool('prayer_${today}_Asr') ?? false,
+        'Maghrib': prefs.getBool('prayer_${today}_Maghrib') ?? false,
+        'Isha': prefs.getBool('prayer_${today}_Isha') ?? false,
+        'Shafaa': prefs.getBool('prayer_${today}_Shafaa') ?? false,
+        'Witr': prefs.getBool('prayer_${today}_Witr') ?? false,
+      };
+    });
+    _calculateScore();
+    _loadWeeklyProgress();
+  }
+
+  Future<void> _savePrayerStatus(String prayer, bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    await prefs.setBool('prayer_${today}_$prayer', value);
+
+    setState(() {
+      _prayerStatus[prayer] = value;
+    });
+    _calculateScore();
+  }
+
+  void _calculateScore() {
+    // Count completed prayers (out of 7: Fajr, Dhuhr, Asr, Maghrib, Isha, Shafaa, Witr)
+    int prayersDone = _prayerStatus.values.where((v) => v).length;
+    setState(() {
+      _dailyScore = (prayersDone / 7 * 100).round();
       _rank = _getRank(_dailyScore);
     });
   }
 
+  Future<void> _loadWeeklyProgress() async {
+    final prefs = await SharedPreferences.getInstance();
+    List<int> progress = [];
+    for (int i = 6; i >= 0; i--) {
+      final date = DateTime.now().subtract(Duration(days: i));
+      final dateKey = DateFormat('yyyy-MM-dd').format(date);
+      int count = 0;
+      for (String prayer in [
+        'Fajr',
+        'Dhuhr',
+        'Asr',
+        'Maghrib',
+        'Isha',
+        'Shafaa',
+        'Witr',
+      ]) {
+        if (prefs.getBool('prayer_${dateKey}_$prayer') ?? false) count++;
+      }
+      progress.add(count);
+    }
+    setState(() {
+      _weeklyProgress = progress;
+    });
+  }
+
   String _getRank(int score) {
-    if (score >= 100) return 'Mumin';
-    if (score >= 80) return 'Hafiz';
-    if (score >= 60) return 'Imam';
-    if (score >= 40) return 'Muadhin';
+    if (score >= 100) return 'Muhsin';
+    if (score >= 85) return 'Mumin';
+    if (score >= 70) return 'Hafiz';
+    if (score >= 50) return 'Imam';
+    if (score >= 30) return 'Muadhin';
     return 'Muslim';
   }
 
@@ -129,6 +196,17 @@ class _DailyPrayerScreenState extends ConsumerState<DailyPrayerScreen> {
                   _buildPrayerTile(
                     'Isha',
                     _prayerTimes!.isha,
+                    icon: FlutterIslamicIcons.solidMosque,
+                  ),
+                  // Shafaa and Witr (time is after Isha, no specific calculation)
+                  _buildPrayerTile(
+                    'Shafaa',
+                    _prayerTimes!.isha.add(const Duration(minutes: 30)),
+                    icon: FlutterIslamicIcons.solidMosque,
+                  ),
+                  _buildPrayerTile(
+                    'Witr',
+                    _prayerTimes!.isha.add(const Duration(minutes: 45)),
                     icon: FlutterIslamicIcons.solidMosque,
                   ),
                   const SizedBox(height: 24),
@@ -190,6 +268,12 @@ class _DailyPrayerScreenState extends ConsumerState<DailyPrayerScreen> {
   }
 
   Widget _buildDailyVerse() {
+    // Random verse based on day of year
+    final dayOfYear = int.parse(DateFormat('D').format(DateTime.now()));
+    final surah = (dayOfYear % 114) + 1;
+    final verseCount = quran.getVerseCount(surah);
+    final verse = (dayOfYear % verseCount) + 1;
+
     return Card(
       elevation: 2,
       child: Padding(
@@ -215,7 +299,7 @@ class _DailyPrayerScreenState extends ConsumerState<DailyPrayerScreen> {
             ),
             const SizedBox(height: 12),
             Text(
-              quran.getVerse(1, 1), // Al-Fatiha: 1
+              quran.getVerse(surah, verse),
               textAlign: TextAlign.center,
               style: const TextStyle(
                 fontFamily: 'Amiri',
@@ -225,7 +309,7 @@ class _DailyPrayerScreenState extends ConsumerState<DailyPrayerScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              quran.getVerseTranslation(1, 1),
+              quran.getVerseTranslation(surah, verse),
               textAlign: TextAlign.center,
               style: Theme.of(
                 context,
@@ -233,7 +317,7 @@ class _DailyPrayerScreenState extends ConsumerState<DailyPrayerScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Surah Al-Fatiha (1:1)',
+              'Surah ${quran.getSurahName(surah)} ($surah:$verse)',
               style: Theme.of(context).textTheme.labelSmall,
             ),
           ],
@@ -286,7 +370,7 @@ class _DailyPrayerScreenState extends ConsumerState<DailyPrayerScreen> {
                     BarChartRodData(
                       toY: e.value.toDouble(),
                       color:
-                          e.value == 5
+                          e.value == 7
                               ? Colors.green
                               : Theme.of(context).colorScheme.primary,
                       width: 16,
@@ -295,7 +379,7 @@ class _DailyPrayerScreenState extends ConsumerState<DailyPrayerScreen> {
                       ),
                       backDrawRodData: BackgroundBarChartRodData(
                         show: true,
-                        toY: 5,
+                        toY: 7, // Max is 7 prayers now
                         color:
                             Theme.of(
                               context,
@@ -317,42 +401,29 @@ class _DailyPrayerScreenState extends ConsumerState<DailyPrayerScreen> {
     required IconData icon,
   }) {
     final formattedTime = DateFormat.jm().format(time);
-    // Mock status for now - in real app, fetch from DB
-    bool isPrayed = false;
+    final isPrayed = _prayerStatus[name] ?? false;
 
-    return StatefulBuilder(
-      builder: (context, setState) {
-        return Card(
-          margin: const EdgeInsets.symmetric(vertical: 8),
-          child: ListTile(
-            leading: Icon(
-              icon,
-              size: 32,
-              color:
-                  isPrayer
-                      ? Theme.of(context).colorScheme.primary
-                      : Colors.orange,
-            ),
-            title: Text(
-              name,
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            subtitle: Text(formattedTime, style: const TextStyle(fontSize: 16)),
-            trailing:
-                isPrayer
-                    ? Checkbox(
-                      value: isPrayed,
-                      onChanged: (value) {
-                        setState(() {
-                          isPrayed = value ?? false;
-                          // Update score logic would go here
-                        });
-                      },
-                    )
-                    : null,
-          ),
-        );
-      },
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      child: ListTile(
+        leading: Icon(
+          icon,
+          size: 32,
+          color:
+              isPrayer ? Theme.of(context).colorScheme.primary : Colors.orange,
+        ),
+        title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
+        subtitle: Text(formattedTime, style: const TextStyle(fontSize: 16)),
+        trailing:
+            isPrayer
+                ? Checkbox(
+                  value: isPrayed,
+                  onChanged: (value) {
+                    _savePrayerStatus(name, value ?? false);
+                  },
+                )
+                : null,
+      ),
     );
   }
 }
