@@ -7,25 +7,32 @@ Planning Phase
  Project Setup
  Initialize Flutter Project
  Setup Project Structure (MVVM/Clean Arch)
- Setup Dependencies (sqflite/drift, provider/riverpod, etc.)
- Setup Assets (Fonts, Icons, Images)
+ Setup Dependencies (riverpod, drift, local_auth, etc.)
+ Setup Assets (Fonts, Icons, JSONs)
  Core Features Implementation (Offline MVP)
- Database Schema Design (SQLite)
+ Database Schema Design (Drift)
+ Security & Settings
+ PIN/Biometric Lock (local_auth)
+ Data Export (CSV/JSON)
  Tab 1: Daily Prayer Tracking
+ Location Selection (Local DB)
+ Prayer Times Logic (Configurable)
+ Notifications (System + Pre-notify)
  UI Implementation
- Logic & Persistence
  Tab 2: Debt/Qada Tracking
- Calculator Logic (with Skip option)
+ Calculator Logic (Lunar Years)
+ Auto-increment Logic (Background/Daily)
  UI Implementation
  Tab 3: Quran & Hadith
- JSON/Asset Data Loading
- Reader UI
+ JSON Data Loading (Uthmani/Sahih)
+ Reader UI & Bookmarking
+ Audio Downloader Logic
  Tab 4: Azkar
- Counter UI
- Gamification (Trees in heaven logic)
+ Counter UI (Sound/Vibration)
+ Custom Azkar & Rewards CRUD
  Tab 5: User Overview
- Statistics Calculation
+ Statistics Calculation (Streaks)
  Charts/Graphs UI
  Verification & Polish
  Manual Testing of all flows
- UI/UX Polish (Animations, Theming)
+ UI/UX Polish (Green/Gold Theme)
