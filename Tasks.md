@@ -1,13 +1,13 @@
 Rafiq App Development Task List
 Planning Phase
  Review requirements and feature list
- Create Implementation Plan
+ Update Implementation Plan (Offline & Skip Qada)
  Generate 30 Clarification Questions
  User Review of Plan and Questions
  Project Setup
  Initialize Flutter Project
  Setup Project Structure (MVVM/Clean Arch)
- Setup Dependencies (sqflite, provider/riverpod, etc.)
+ Setup Dependencies (sqflite/drift, provider/riverpod, etc.)
  Setup Assets (Fonts, Icons, Images)
  Core Features Implementation (Offline MVP)
  Database Schema Design (SQLite)
@@ -15,7 +15,7 @@ Planning Phase
  UI Implementation
  Logic & Persistence
  Tab 2: Debt/Qada Tracking
- Calculator Logic
+ Calculator Logic (with Skip option)
  UI Implementation
  Tab 3: Quran & Hadith
  JSON/Asset Data Loading
