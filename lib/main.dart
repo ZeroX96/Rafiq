@@ -7,6 +7,8 @@ import 'package:rafiq/features/qada_debt/presentation/qada_debt_screen.dart';
 import 'package:rafiq/features/quran_hadith/presentation/quran_hadith_screen.dart';
 import 'package:rafiq/features/azkar/presentation/azkar_screen.dart';
 import 'package:rafiq/features/overview/presentation/overview_screen.dart';
+import 'package:rafiq/features/onboarding/presentation/onboarding_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   runApp(const ProviderScope(child: RafiqApp()));
@@ -14,7 +16,24 @@ void main() {
 
 final _router = GoRouter(
   initialLocation: '/daily-prayer',
+  redirect: (context, state) async {
+    final prefs = await SharedPreferences.getInstance();
+    final bool onboardingCompleted =
+        prefs.getBool('onboarding_completed') ?? false;
+
+    if (!onboardingCompleted && state.uri.path != '/onboarding') {
+      return '/onboarding';
+    }
+    if (onboardingCompleted && state.uri.path == '/onboarding') {
+      return '/daily-prayer';
+    }
+    return null;
+  },
   routes: [
+    GoRoute(
+      path: '/onboarding',
+      builder: (context, state) => const OnboardingScreen(),
+    ),
     ShellRoute(
       builder: (context, state, child) {
         return ScaffoldWithNavBar(child: child);
