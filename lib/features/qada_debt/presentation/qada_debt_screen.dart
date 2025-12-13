@@ -76,7 +76,8 @@ class _QadaDebtScreenState extends ConsumerState<QadaDebtScreen> {
         dob: profile['dob'],
         pubertyAge: profile['pubertyAge'],
         gender: profile['gender'],
-        hasMenstruation: profile['gender'] == 'Female',
+        hasMenstruation:
+            profile['gender'] == 'Girl' || profile['gender'] == 'Woman',
       );
       loadedDebt = calculated;
       for (var entry in loadedDebt.entries) {

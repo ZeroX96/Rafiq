@@ -58,7 +58,8 @@ class QadaCalculator {
     int adjustedDays = totalDays;
 
     // Subtract menstruation days for females
-    if (gender == 'Female' && hasMenstruation) {
+    if ((gender == 'Female' || gender == 'Girl' || gender == 'Woman') &&
+        hasMenstruation) {
       // Approximate months passed
       final double months = totalDays / 30.0;
       final int totalMenstruationDays = (months * menstruationDuration).round();

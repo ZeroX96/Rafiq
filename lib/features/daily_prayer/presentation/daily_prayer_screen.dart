@@ -193,8 +193,8 @@ class _DailyPrayerScreenState extends ConsumerState<DailyPrayerScreen> {
   }
 
   void _navigateToQuran() {
-    // Navigate to Quran tab with specific surah/verse
-    context.go('/quran');
+    // Navigate to Quran tab with correct route
+    context.go('/quran-hadith');
   }
 
   @override
@@ -446,28 +446,119 @@ class _DailyPrayerScreenState extends ConsumerState<DailyPrayerScreen> {
     );
   }
 
+  // Prayer quotes for each prayer
+  final Map<String, String> _prayerQuotes = {
+    'Fajr': 'من صلي الفجر في جماعة فكأنما قام الليل كله',
+    'Sunrise': 'اللهم أنت ربي لا إله إلا أنت',
+    'Dhuhr': 'صلاة الظهر هي الصلاة الوسطى',
+    'Asr': 'حافظوا على الصلوات والصلاة الوسطى',
+    'Maghrib': 'من صلى المغرب في جماعة غفر له ما تقدم من ذنبه',
+    'Isha': 'من صلى العشاء في جماعة فكأنما قام نصف الليل',
+    'Shafaa': 'شفع ثم أوتر',
+    'Witr': 'إن الله وتر يحب الوتر',
+  };
+
+  void _showPrayerTypeDialog(String name) {
+    HapticFeedback.mediumImpact();
+    final quote = _prayerQuotes[name] ?? '';
+
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: Text('How did you pray $name?'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    quote,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontFamily: 'Amiri', fontSize: 18),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _buildPrayerOption(name, 'Jama\'a', Icons.groups, Colors.green),
+                _buildPrayerOption(name, 'Fard', Icons.person, Colors.blue),
+                _buildPrayerOption(
+                  name,
+                  'Late',
+                  Icons.access_time,
+                  Colors.orange,
+                ),
+                _buildPrayerOption(name, 'Missed', Icons.close, Colors.red),
+              ],
+            ),
+          ),
+    );
+  }
+
+  Widget _buildPrayerOption(
+    String prayer,
+    String type,
+    IconData icon,
+    Color color,
+  ) {
+    return ListTile(
+      leading: Icon(icon, color: color),
+      title: Text(type),
+      onTap: () {
+        _savePrayerStatus(prayer, type != 'Missed');
+        Navigator.pop(context);
+        if (type != 'Missed') {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('$prayer marked as $type')));
+        }
+      },
+    );
+  }
+
   Widget _buildPrayerTile(String name, DateTime time) {
     final formattedTime = DateFormat.jm().format(time);
     final isPrayed = _prayerStatus[name] ?? false;
 
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      child: ListTile(
-        leading: Icon(
-          FlutterIslamicIcons.solidMosque,
-          size: 32,
-          color:
-              name == 'Sunrise'
-                  ? Colors.orange
-                  : Theme.of(context).colorScheme.primary,
-        ),
-        title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text(formattedTime, style: const TextStyle(fontSize: 16)),
-        trailing: Checkbox(
-          value: isPrayed,
-          onChanged: (value) {
-            _savePrayerStatus(name, value ?? false);
-          },
+    return InkWell(
+      onTap: () => _showPrayerTypeDialog(name),
+      borderRadius: BorderRadius.circular(12),
+      child: Card(
+        margin: const EdgeInsets.symmetric(vertical: 8),
+        color: isPrayed ? Colors.green.shade50 : null,
+        child: ListTile(
+          leading: Icon(
+            FlutterIslamicIcons.solidMosque,
+            size: 32,
+            color:
+                isPrayed
+                    ? Colors.green
+                    : (name == 'Sunrise'
+                        ? Colors.orange
+                        : Theme.of(context).colorScheme.primary),
+          ),
+          title: Text(
+            name,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: isPrayed ? Colors.green.shade800 : null,
+            ),
+          ),
+          subtitle: Text(
+            formattedTime,
+            style: TextStyle(
+              fontSize: 16,
+              color: isPrayed ? Colors.green.shade600 : null,
+            ),
+          ),
+          trailing: Icon(
+            isPrayed ? Icons.check_circle : Icons.radio_button_unchecked,
+            color: isPrayed ? Colors.green : Colors.grey,
+            size: 28,
+          ),
         ),
       ),
     );

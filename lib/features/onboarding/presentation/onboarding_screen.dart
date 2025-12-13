@@ -22,7 +22,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final TextEditingController _emailController = TextEditingController();
   final GlobalKey<FormState> _nameFormKey = GlobalKey<FormState>();
 
-  String _gender = 'Male';
+  String _gender = 'Man';
   String _madhab = 'Hanafi';
   DateTime _dob = DateTime(2000, 1, 1);
   int _pubertyAge = 13;
@@ -90,7 +90,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       dob: _dob,
       pubertyAge: _pubertyAge,
       gender: _gender,
-      hasMenstruation: _gender == 'Female',
+      hasMenstruation: _gender == 'Girl' || _gender == 'Woman',
       menstruationDuration: _menstruationDuration,
     );
 
@@ -156,7 +156,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             _buildNameStep(),
             _buildGenderMadhabStep(),
             _buildAgeStep(),
-            if (_gender == 'Female')
+            if (_gender == 'Girl' || _gender == 'Woman')
               _buildMenstruationStep()
             else
               const SizedBox(), // Placeholder to keep index sync
@@ -280,13 +280,51 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           DropdownButtonFormField<String>(
             value: _gender,
             decoration: const InputDecoration(
-              labelText: 'Gender',
+              labelText: 'Who are you?',
               border: OutlineInputBorder(),
             ),
-            items:
-                ['Male', 'Female']
-                    .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                    .toList(),
+            items: [
+              DropdownMenuItem(
+                value: 'Boy',
+                child: Row(
+                  children: [
+                    Icon(Icons.child_care, color: Colors.blue),
+                    SizedBox(width: 8),
+                    Text('Boy'),
+                  ],
+                ),
+              ),
+              DropdownMenuItem(
+                value: 'Man',
+                child: Row(
+                  children: [
+                    Icon(Icons.man, color: Colors.blue),
+                    SizedBox(width: 8),
+                    Text('Man'),
+                  ],
+                ),
+              ),
+              DropdownMenuItem(
+                value: 'Girl',
+                child: Row(
+                  children: [
+                    Icon(Icons.girl, color: Colors.pink),
+                    SizedBox(width: 8),
+                    Text('Girl'),
+                  ],
+                ),
+              ),
+              DropdownMenuItem(
+                value: 'Woman',
+                child: Row(
+                  children: [
+                    Icon(Icons.woman, color: Colors.pink),
+                    SizedBox(width: 8),
+                    Text('Woman'),
+                  ],
+                ),
+              ),
+            ],
             onChanged: (v) => setState(() => _gender = v!),
           ),
           const SizedBox(height: 16),

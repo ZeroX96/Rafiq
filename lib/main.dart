@@ -38,6 +38,10 @@ final _router = GoRouter(
       path: '/onboarding',
       builder: (context, state) => const OnboardingScreen(),
     ),
+    GoRoute(
+      path: '/settings',
+      builder: (context, state) => const SettingsScreen(),
+    ),
     ShellRoute(
       builder: (context, state, child) {
         return ScaffoldWithNavBar(child: child);
@@ -62,10 +66,6 @@ final _router = GoRouter(
         GoRoute(
           path: '/overview',
           builder: (context, state) => const OverviewScreen(),
-        ),
-        GoRoute(
-          path: '/settings',
-          builder: (context, state) => const SettingsScreen(),
         ),
       ],
     ),
@@ -157,9 +157,9 @@ class _ScaffoldWithNavBarState extends State<ScaffoldWithNavBar> {
         },
         destinations: [
           NavigationDestination(
-            icon: Icon(Icons.access_time, color: Colors.blue.shade300),
-            selectedIcon: Icon(Icons.access_time, color: Colors.blue),
-            label: 'Prayers',
+            icon: Icon(Icons.home, color: Colors.blue.shade300),
+            selectedIcon: Icon(Icons.home, color: Colors.blue),
+            label: 'Home',
           ),
           NavigationDestination(
             icon: Icon(Icons.history, color: Colors.orange.shade300),
