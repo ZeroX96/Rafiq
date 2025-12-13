@@ -1,0 +1,32 @@
+[
+    {
+        "id": 1,
+        "name": "Al-Fatiha",
+        "transliteration": "Al-Fatiha",
+        "translation": "The Opener",
+        "type": "meccan",
+        "total_verses": 7,
+        "verses": [
+            {
+                "id": 1,
+                "text": "بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ",
+                "translation": "In the name of Allah, the Entirely Merciful, the Especially Merciful."
+            }
+        ]
+    },
+    {
+        "id": 2,
+        "name": "Al-Baqarah",
+        "transliteration": "Al-Baqarah",
+        "translation": "The Cow",
+        "type": "medinan",
+        "total_verses": 286,
+        "verses": [
+            {
+                "id": 1,
+                "text": "Alif, Lam, Meem",
+                "translation": "Alif, Lam, Meem."
+            }
+        ]
+    }
+]

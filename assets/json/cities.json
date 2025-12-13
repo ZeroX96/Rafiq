@@ -1,0 +1,56 @@
+[
+    {
+        "name": "Mecca",
+        "lat": 21.3891,
+        "lng": 39.8579,
+        "country": "SA"
+    },
+    {
+        "name": "Medina",
+        "lat": 24.5247,
+        "lng": 39.5692,
+        "country": "SA"
+    },
+    {
+        "name": "Cairo",
+        "lat": 30.0444,
+        "lng": 31.2357,
+        "country": "EG"
+    },
+    {
+        "name": "London",
+        "lat": 51.5074,
+        "lng": -0.1278,
+        "country": "UK"
+    },
+    {
+        "name": "New York",
+        "lat": 40.7128,
+        "lng": -74.0060,
+        "country": "US"
+    },
+    {
+        "name": "Istanbul",
+        "lat": 41.0082,
+        "lng": 28.9784,
+        "country": "TR"
+    },
+    {
+        "name": "Dubai",
+        "lat": 25.2048,
+        "lng": 55.2708,
+        "country": "AE"
+    },
+    {
+        "name": "Jakarta",
+        "lat": -6.2088,
+        "lng": 106.8456,
+        "country": "ID"
+    },
+    {
+        "name": "Karachi",
+        "lat": 24.8607,
+        "lng": 67.0011,
+        "country": "PK"
+    }
+]
