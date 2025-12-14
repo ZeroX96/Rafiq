@@ -1,5 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_islamic_icons/flutter_islamic_icons.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -319,33 +320,85 @@ class _OverviewScreenState extends State<OverviewScreen> {
   }
 
   Widget _buildChallengeCard(String period, String title, double progress) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  period,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.blue,
+    return FutureBuilder<bool>(
+      future: _getChallengeStatus(title),
+      builder: (context, snapshot) {
+        final isCompleted = snapshot.data ?? false;
+        final displayProgress = isCompleted ? 1.0 : progress;
+
+        return Card(
+          margin: const EdgeInsets.only(bottom: 12),
+          color: isCompleted ? Colors.green.shade50 : null,
+          child: InkWell(
+            onTap: () => _toggleChallenge(title, !isCompleted),
+            borderRadius: BorderRadius.circular(12),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        period,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: isCompleted ? Colors.green : Colors.blue,
+                        ),
+                      ),
+                      if (isCompleted)
+                        const Icon(Icons.check_circle, color: Colors.green)
+                      else
+                        Text('${(displayProgress * 100).toInt()}%'),
+                    ],
                   ),
-                ),
-                Text('${(progress * 100).toInt()}%'),
-              ],
+                  const SizedBox(height: 8),
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 16,
+                      decoration:
+                          isCompleted ? TextDecoration.lineThrough : null,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  LinearProgressIndicator(
+                    value: displayProgress.clamp(0.0, 1.0),
+                    color: isCompleted ? Colors.green : null,
+                    backgroundColor: isCompleted ? Colors.green.shade100 : null,
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 8),
-            Text(title, style: const TextStyle(fontSize: 16)),
-            const SizedBox(height: 8),
-            LinearProgressIndicator(value: progress.clamp(0.0, 1.0)),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
+  }
+
+  Future<bool> _getChallengeStatus(String title) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('challenge_completed_$title') ?? false;
+  }
+
+  Future<void> _toggleChallenge(String title, bool completed) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('challenge_completed_$title', completed);
+    setState(() {}); // Rebuild to update UI
+
+    if (completed) {
+      // Play success sound (placeholder) and show feedback
+      HapticFeedback.heavyImpact();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Congrats! You completed: $title'),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 }

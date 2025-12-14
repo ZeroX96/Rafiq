@@ -98,12 +98,18 @@ class _QadaDebtScreenState extends ConsumerState<QadaDebtScreen> {
     }
   }
 
-  void _decrement(String prayer) {
+  void _decrement(String prayer) async {
     HapticFeedback.lightImpact();
     setState(() {
       if (_debt[prayer]! > 0) _debt[prayer] = _debt[prayer]! - 1;
     });
     _saveDebt();
+
+    // Record timestamp
+    final prefs = await SharedPreferences.getInstance();
+    final now = DateTime.now().toIso8601String();
+    await prefs.setString('last_qada_payment_$prayer', now);
+    await prefs.setString('last_qada_payment_any', now);
   }
 
   void _increment(String prayer) {

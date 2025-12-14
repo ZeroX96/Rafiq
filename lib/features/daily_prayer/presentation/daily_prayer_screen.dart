@@ -131,6 +131,14 @@ class _DailyPrayerScreenState extends ConsumerState<DailyPrayerScreen> {
       status != 'None' && status != 'Missed',
     );
 
+    // Record timestamp if marked as done
+    if (status != 'None' && status != 'Missed') {
+      await prefs.setString(
+        'prayer_time_${today}_$prayer',
+        DateTime.now().toIso8601String(),
+      );
+    }
+
     setState(() {
       _prayerStatus[prayer] = status;
     });

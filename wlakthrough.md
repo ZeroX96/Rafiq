@@ -102,6 +102,19 @@ Hadith:
 Integrated Dorar.net API for Hadith search.
 Added Search Bar in Hadith tab.
 Displays results with Narrator, Source, and Grade (colored by authenticity).
+10. Phase 5 Logic & Interaction
+- **Prayer Time Recording**:
+    - **Daily Prayers**: Records the exact timestamp (`DateTime.now()`) when a prayer is marked as done.
+    - **Qada**: Records the timestamp of the last Qada payment for each prayer type.
+- **Onboarding Refactor**:
+    - **Menstruation Input**: Moved to the "Personal Details" step (Step 2), visible only if gender is Girl/Woman.
+    - **Summary Sync**: Fixed issue where editing debt in Summary step didn't save to the main Qada debt storage. Now saves correctly on "Finish".
+- **Interactive Challenges**:
+    - Challenges in `OverviewScreen` are now clickable.
+    - Tapping a challenge toggles its completion status.
+    - **Feedback**: Plays a haptic impact and shows a "Congrats!" SnackBar upon completion.
+    - **Visuals**: Completed challenges turn green with a checkmark and strikethrough text.
+
 Verification Results
 Automated Build
 Ran flutter build apk --release successfully.
@@ -114,6 +127,11 @@ Manual Verification Checklist
  Daily Prayer: Can select Jamaa/Fard/Late. Score updates correctly.
  Hadith: Can search for Hadiths using API.
  Launcher: App icon and name are correct.
+ - [x] **Onboarding**: Menstruation slider appears for females in Step 2.
+ - [x] **Onboarding**: Debt edited in Summary is reflected in Qada tab.
+ - [x] **Daily Prayer**: Marking prayer saves timestamp (internal verification).
+ - [x] **Qada**: Decrementing debt saves timestamp (internal verification).
+ - [x] **Challenges**: Can tap to complete, shows feedback, updates UI.
 Next Steps
 Sound Assets: If specific custom sound files are desired later, they can be added to assets/sounds/ and 
 FeedbackService

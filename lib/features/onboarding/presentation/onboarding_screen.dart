@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:rafiq/core/services/settings_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:rafiq/features/qada_debt/domain/qada_calculator.dart';
 import 'package:rafiq/features/pin/presentation/pin_screen.dart';
 
@@ -159,6 +160,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
     // Save email if needed (not in original profile but requested)
     // await settings.saveEmail(_emailController.text);
+
+    // Save Qada Debt
+    final prefs = await SharedPreferences.getInstance();
+    for (var entry in _calculatedDebt.entries) {
+      await prefs.setInt('qada_debt_${entry.key}', entry.value);
+    }
 
     await settings.setOnboardingCompleted(true);
     if (mounted) context.go('/daily-prayer');
@@ -373,6 +380,22 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     .toList(),
             onChanged: (v) => setState(() => _madhab = v!),
           ),
+          if (_gender == 'Girl' || _gender == 'Woman') ...[
+            const SizedBox(height: 24),
+            Text(
+              'Average Menstruation Days: $_menstruationDuration',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            Slider(
+              value: _menstruationDuration.toDouble(),
+              min: 3,
+              max: 10,
+              divisions: 7,
+              label: _menstruationDuration.toString(),
+              onChanged:
+                  (v) => setState(() => _menstruationDuration = v.toInt()),
+            ),
+          ],
         ],
       ),
     );
@@ -455,25 +478,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 'We will calculate missed prayers from age $_pubertyAge to now.',
               ),
             ),
-            if (_gender == 'Girl' || _gender == 'Woman')
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Average Menstruation Days (per month): $_menstruationDuration',
-                  ),
-                  Slider(
-                    value: _menstruationDuration.toDouble(),
-                    min: 3,
-                    max: 10,
-                    divisions: 7,
-                    label: _menstruationDuration.toString(),
-                    onChanged:
-                        (v) =>
-                            setState(() => _menstruationDuration = v.toInt()),
-                  ),
-                ],
-              ),
           ],
 
           _buildRadioOption(
