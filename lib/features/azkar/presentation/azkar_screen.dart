@@ -38,6 +38,14 @@ class _AzkarScreenState extends State<AzkarScreen> {
     );
     const initSettings = InitializationSettings(android: androidSettings);
     await _notificationsPlugin.initialize(initSettings);
+
+    final AndroidFlutterLocalNotificationsPlugin? androidImplementation =
+        _notificationsPlugin
+            .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin
+            >();
+
+    await androidImplementation?.requestNotificationsPermission();
   }
 
   Future<void> _loadAzkar() async {
@@ -338,8 +346,16 @@ class _AzkarScreenState extends State<AzkarScreen> {
                   final time = TimeOfDay(hour: r['hour'], minute: r['minute']);
                   return InputChip(
                     label: Text(time.format(context)),
-                    deleteIcon: const Icon(Icons.close, size: 16),
-                    onDeleted: () => _deleteReminder(r['id']),
+                    deleteIcon: const Icon(Icons.close, size: 20),
+                    onDeleted: () {
+                      _deleteReminder(r['id']);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Reminder deleted'),
+                          duration: Duration(seconds: 1),
+                        ),
+                      );
+                    },
                     onPressed: () => _showEditReminderDialog(r),
                   );
                 }).toList(),

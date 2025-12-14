@@ -11,6 +11,7 @@ import 'package:rafiq/features/settings/presentation/settings_screen.dart';
 import 'package:rafiq/features/onboarding/presentation/onboarding_screen.dart';
 import 'package:rafiq/features/pin/presentation/pin_screen.dart';
 import 'package:rafiq/core/services/pin_service.dart';
+import 'package:rafiq/core/widgets/double_back_to_exit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -62,7 +63,7 @@ final _router = GoRouter(
     ),
     ShellRoute(
       builder: (context, state, child) {
-        return ScaffoldWithNavBar(child: child);
+        return DoubleBackToExit(child: ScaffoldWithNavBar(child: child));
       },
       routes: [
         GoRoute(

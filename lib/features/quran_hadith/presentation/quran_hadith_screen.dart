@@ -4,6 +4,7 @@ import 'package:flutter_islamic_icons/flutter_islamic_icons.dart';
 import 'package:quran/quran.dart' as quran;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
+import 'package:rafiq/features/quran_hadith/data/hadith_service.dart';
 
 class QuranHadithScreen extends StatefulWidget {
   const QuranHadithScreen({super.key});
@@ -208,46 +209,158 @@ class _QuranHadithScreenState extends State<QuranHadithScreen> {
     );
   }
 
+  final TextEditingController _searchController = TextEditingController();
+  List<Map<String, dynamic>> _searchResults = [];
+  bool _isSearching = false;
+  final HadithService _hadithService = HadithService();
+
   Widget _buildHadithTab() {
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: _hadithList.length,
-      itemBuilder: (context, index) {
-        final hadith = _hadithList[index];
-        return Card(
-          margin: const EdgeInsets.only(bottom: 16),
-          child: ExpansionTile(
-            leading: CircleAvatar(
-              backgroundColor: Colors.amber,
-              child: Text(
-                hadith['number']!,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              labelText: 'Search Hadith (Dorar.net)',
+              hintText: 'Enter keywords...',
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon: IconButton(
+                icon: const Icon(Icons.search),
+                onPressed: _performSearch,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
             ),
-            title: Text(
-              hadith['title']!,
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            subtitle: Text(
-              hadith['source']!,
-              style: Theme.of(context).textTheme.labelSmall,
-            ),
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  hadith['text']!,
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-              ),
-            ],
+            onSubmitted: (_) => _performSearch(),
           ),
-        );
-      },
+        ),
+        Expanded(
+          child:
+              _isSearching
+                  ? const Center(child: CircularProgressIndicator())
+                  : _searchResults.isNotEmpty
+                  ? ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: _searchResults.length,
+                    itemBuilder: (context, index) {
+                      final hadith = _searchResults[index];
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 16),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _stripHtml(hadith['text']),
+                                style: const TextStyle(
+                                  fontFamily: 'Amiri',
+                                  fontSize: 18,
+                                  height: 1.5,
+                                ),
+                                textAlign: TextAlign.right,
+                              ),
+                              const SizedBox(height: 12),
+                              const Divider(),
+                              Text(
+                                'Narrator: ${hadith['rawi']}',
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                              Text(
+                                'Source: ${hadith['source']}',
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                              Text(
+                                'Grade: ${hadith['grade']}',
+                                style: Theme.of(
+                                  context,
+                                ).textTheme.bodySmall?.copyWith(
+                                  color: _getGradeColor(hadith['grade']),
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  )
+                  : ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: _hadithList.length,
+                    itemBuilder: (context, index) {
+                      final hadith = _hadithList[index];
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 16),
+                        child: ExpansionTile(
+                          leading: CircleAvatar(
+                            backgroundColor: Colors.amber,
+                            child: Text(
+                              hadith['number']!,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          title: Text(
+                            hadith['title']!,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          subtitle: Text(
+                            hadith['source']!,
+                            style: Theme.of(context).textTheme.labelSmall,
+                          ),
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Text(
+                                hadith['text']!,
+                                style: Theme.of(context).textTheme.bodyMedium,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+        ),
+      ],
     );
+  }
+
+  Future<void> _performSearch() async {
+    if (_searchController.text.isEmpty) return;
+
+    setState(() => _isSearching = true);
+    try {
+      final results = await _hadithService.searchHadith(_searchController.text);
+      setState(() {
+        _searchResults = results;
+        _isSearching = false;
+      });
+    } catch (e) {
+      setState(() => _isSearching = false);
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
+      }
+    }
+  }
+
+  String _stripHtml(String htmlString) {
+    return htmlString.replaceAll(RegExp(r'<[^>]*>'), '');
+  }
+
+  Color _getGradeColor(String grade) {
+    if (grade.contains('صحيح')) return Colors.green;
+    if (grade.contains('حسن')) return Colors.blue;
+    if (grade.contains('ضعيف')) return Colors.orange;
+    if (grade.contains('موضوع')) return Colors.red;
+    return Colors.grey;
   }
 
   void _openSurah(BuildContext context, int surahNumber) {
@@ -355,7 +468,6 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Container(
-                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color:
                       isRead
@@ -367,58 +479,65 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                   border:
                       isRead ? Border.all(color: Colors.green, width: 2) : null,
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: InkWell(
+                  onTap: () => _toggleRead(verseNumber),
+                  borderRadius: BorderRadius.circular(8),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        CircleAvatar(
-                          radius: 12,
-                          backgroundColor:
-                              Theme.of(context).colorScheme.secondary,
-                          child: Text(
-                            verseNumber.toString(),
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: Theme.of(context).colorScheme.onSecondary,
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            CircleAvatar(
+                              radius: 12,
+                              backgroundColor:
+                                  Theme.of(context).colorScheme.secondary,
+                              child: Text(
+                                verseNumber.toString(),
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color:
+                                      Theme.of(context).colorScheme.onSecondary,
+                                ),
+                              ),
                             ),
+                            Icon(
+                              isRead
+                                  ? Icons.check_circle
+                                  : Icons.radio_button_unchecked,
+                              color: isRead ? Colors.green : Colors.grey,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          quran.getVerse(widget.surahNumber, verseNumber),
+                          textAlign: TextAlign.right,
+                          style: const TextStyle(
+                            fontFamily: 'Amiri',
+                            fontSize: 22,
+                            height: 1.5,
                           ),
                         ),
-                        IconButton(
-                          icon: Icon(
-                            isRead
-                                ? Icons.check_circle
-                                : Icons.radio_button_unchecked,
-                            color: isRead ? Colors.green : Colors.grey,
+                        const SizedBox(height: 8),
+                        Text(
+                          quran.getVerseTranslation(
+                            widget.surahNumber,
+                            verseNumber,
                           ),
-                          onPressed: () => _toggleRead(verseNumber),
-                          tooltip: isRead ? 'Mark as Unread' : 'Mark as Read',
+                          textAlign: TextAlign.left,
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodyMedium?.copyWith(
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      quran.getVerse(widget.surahNumber, verseNumber),
-                      textAlign: TextAlign.right,
-                      style: const TextStyle(
-                        fontFamily: 'Amiri',
-                        fontSize: 22,
-                        height: 1.5,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      quran.getVerseTranslation(
-                        widget.surahNumber,
-                        verseNumber,
-                      ),
-                      textAlign: TextAlign.left,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
               const SizedBox(height: 16),

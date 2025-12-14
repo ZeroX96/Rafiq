@@ -23,15 +23,15 @@ class _DailyPrayerScreenState extends ConsumerState<DailyPrayerScreen> {
   String _cityName = 'Loading...';
 
   // Prayer states (including Sunrise now)
-  Map<String, bool> _prayerStatus = {
-    'Fajr': false,
-    'Sunrise': false, // Added
-    'Dhuhr': false,
-    'Asr': false,
-    'Maghrib': false,
-    'Isha': false,
-    'Shafaa': false,
-    'Witr': false,
+  Map<String, String> _prayerStatus = {
+    'Fajr': 'None',
+    'Sunrise': 'None',
+    'Dhuhr': 'None',
+    'Asr': 'None',
+    'Maghrib': 'None',
+    'Isha': 'None',
+    'Shafaa': 'None',
+    'Witr': 'None',
   };
 
   // Gamification State
@@ -94,7 +94,7 @@ class _DailyPrayerScreenState extends ConsumerState<DailyPrayerScreen> {
     final prefs = await SharedPreferences.getInstance();
     final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
 
-    Map<String, bool> status = {};
+    Map<String, String> status = {};
     for (String prayer in [
       'Fajr',
       'Sunrise',
@@ -105,7 +105,14 @@ class _DailyPrayerScreenState extends ConsumerState<DailyPrayerScreen> {
       'Shafaa',
       'Witr',
     ]) {
-      status[prayer] = prefs.getBool('prayer_${today}_$prayer') ?? false;
+      // Migrate old bool to new string if needed
+      final oldVal = prefs.getBool('prayer_${today}_$prayer');
+      if (oldVal != null) {
+        status[prayer] = oldVal ? 'Fard' : 'None'; // Default to Fard if true
+      } else {
+        status[prayer] =
+            prefs.getString('prayer_status_${today}_$prayer') ?? 'None';
+      }
     }
 
     setState(() => _prayerStatus = status);
@@ -113,24 +120,40 @@ class _DailyPrayerScreenState extends ConsumerState<DailyPrayerScreen> {
     _loadWeeklyProgress();
   }
 
-  Future<void> _savePrayerStatus(String prayer, bool value) async {
+  Future<void> _savePrayerStatus(String prayer, String status) async {
     HapticFeedback.lightImpact();
     final prefs = await SharedPreferences.getInstance();
     final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-    await prefs.setBool('prayer_${today}_$prayer', value);
+    await prefs.setString('prayer_status_${today}_$prayer', status);
+    // Keep boolean for backward compatibility/charts for now
+    await prefs.setBool(
+      'prayer_${today}_$prayer',
+      status != 'None' && status != 'Missed',
+    );
 
     setState(() {
-      _prayerStatus[prayer] = value;
+      _prayerStatus[prayer] = status;
     });
     _calculateScore();
     _loadWeeklyProgress(); // Real-time chart update
   }
 
   void _calculateScore() {
-    // Count completed prayers (out of 8 now: Fajr, Sunrise, Dhuhr, Asr, Maghrib, Isha, Shafaa, Witr)
-    int prayersDone = _prayerStatus.values.where((v) => v).length;
+    int score = 0;
+    for (var status in _prayerStatus.values) {
+      if (status == 'Jama\'a')
+        score += 13;
+      else if (status == 'Fard')
+        score += 10;
+      else if (status == 'Late')
+        score += 8;
+    }
+
+    // Cap at 100
+    if (score > 100) score = 100;
+
     setState(() {
-      _dailyScore = (prayersDone / 8 * 100).round();
+      _dailyScore = score;
       _rank = _getRank(_dailyScore);
     });
   }
@@ -558,7 +581,7 @@ class _DailyPrayerScreenState extends ConsumerState<DailyPrayerScreen> {
       leading: Icon(icon, color: color),
       title: Text(type),
       onTap: () {
-        _savePrayerStatus(prayer, type != 'Missed');
+        _savePrayerStatus(prayer, type);
         Navigator.pop(context);
         if (type != 'Missed') {
           ScaffoldMessenger.of(
@@ -571,21 +594,32 @@ class _DailyPrayerScreenState extends ConsumerState<DailyPrayerScreen> {
 
   Widget _buildPrayerTile(String name, DateTime time) {
     final formattedTime = DateFormat.jm().format(time);
-    final isPrayed = _prayerStatus[name] ?? false;
+    final status = _prayerStatus[name] ?? 'None';
+    final isPrayed = status != 'None' && status != 'Missed';
+
+    Color? statusColor;
+    if (status == 'Jama\'a')
+      statusColor = Colors.green;
+    else if (status == 'Fard')
+      statusColor = Colors.blue;
+    else if (status == 'Late')
+      statusColor = Colors.orange;
+    else if (status == 'Missed')
+      statusColor = Colors.red;
 
     return InkWell(
       onTap: () => _showPrayerTypeDialog(name),
       borderRadius: BorderRadius.circular(12),
       child: Card(
         margin: const EdgeInsets.symmetric(vertical: 8),
-        color: isPrayed ? Colors.green.shade50 : null,
+        color: isPrayed ? statusColor?.withOpacity(0.1) : null,
         child: ListTile(
           leading: Icon(
             FlutterIslamicIcons.solidMosque,
             size: 32,
             color:
                 isPrayed
-                    ? Colors.green
+                    ? statusColor
                     : (name == 'Sunrise'
                         ? Colors.orange
                         : Theme.of(context).colorScheme.primary),
@@ -594,19 +628,19 @@ class _DailyPrayerScreenState extends ConsumerState<DailyPrayerScreen> {
             name,
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              color: isPrayed ? Colors.green.shade800 : null,
+              color: isPrayed ? statusColor : null,
             ),
           ),
           subtitle: Text(
-            formattedTime,
+            '$formattedTime ${isPrayed ? "• $status" : ""}',
             style: TextStyle(
-              fontSize: 16,
-              color: isPrayed ? Colors.green.shade600 : null,
+              fontSize: 14,
+              color: isPrayed ? statusColor : null,
             ),
           ),
           trailing: Icon(
             isPrayed ? Icons.check_circle : Icons.radio_button_unchecked,
-            color: isPrayed ? Colors.green : Colors.grey,
+            color: isPrayed ? statusColor : Colors.grey,
             size: 28,
           ),
         ),

@@ -75,6 +75,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       if (!_nameFormKey.currentState!.validate()) return;
     }
 
+    if (_currentPage == 4 && _selectedCity == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please select a city')));
+      return;
+    }
+
     if (_currentPage < 5) {
       // Increased steps
       _pageController.nextPage(
