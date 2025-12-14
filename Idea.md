@@ -156,3 +156,15 @@ and also user can make multiple reminders
 the app starts without a pin, fix it
 settings in the overiew tab not working says coming soon
 also if i click the daily verses i should go to its location in the quran tab
+
+at every time of a prayer, the application ask for the user status if prayed or not and in which mode or the user can select ask me later and the app asks him after 30minutes.
+note also during the onboarding,  the user can selct not years missed but dayes, weeks, months or years so he can decide if he missed n days, n weeks, n months, n years and the application calculates based on the user input, fix that so give user 4 points of dayes> default 0, weeks the same, months the same, years the same and user put his info as he thinks.
+
+in the azkars tab, even if the user added a reminder, it dosn't directly show on the screen, i need to move to another tab and come again so it can be seen, fix this and also when a user selects to delete a reminder, it says deleted but stayes in the list on the screen, fix that
+
+
+i need also the prayers to be separated, the ones that are Fard and muslims must perform them (fajr, Dhuhr, Asr, Maghrib, Isha) in a one collection, and the Sonan or optional in another collection (Sunrise, Shafaa'a, Witr, etc)
+
+don't take the exact names from me, review and check and get and set the correct and trusted names from a trusted source since im not a native english speaker
+
+

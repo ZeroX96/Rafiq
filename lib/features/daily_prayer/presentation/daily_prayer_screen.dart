@@ -288,12 +288,24 @@ class _DailyPrayerScreenState extends ConsumerState<DailyPrayerScreen> {
                   const SizedBox(height: 16),
                   _buildDailyVerse(),
                   const SizedBox(height: 16),
+                  const Text(
+                    'Fard Prayers (Obligatory)',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
                   _buildPrayerTile('Fajr', _prayerTimes!.fajr),
-                  _buildPrayerTile('Sunrise', _prayerTimes!.sunrise),
                   _buildPrayerTile('Dhuhr', _prayerTimes!.dhuhr),
                   _buildPrayerTile('Asr', _prayerTimes!.asr),
                   _buildPrayerTile('Maghrib', _prayerTimes!.maghrib),
                   _buildPrayerTile('Isha', _prayerTimes!.isha),
+
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Sunnah Prayers (Optional)',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  _buildPrayerTile('Sunrise', _prayerTimes!.sunrise),
                   _buildPrayerTile(
                     'Shafaa',
                     _prayerTimes!.isha.add(const Duration(minutes: 30)),

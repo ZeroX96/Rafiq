@@ -105,17 +105,19 @@ class _AzkarScreenState extends State<AzkarScreen> {
 
   Future<void> _addReminder(TimeOfDay time) async {
     final id = DateTime.now().millisecondsSinceEpoch;
-    _reminders.add({'id': id, 'hour': time.hour, 'minute': time.minute});
+    setState(() {
+      _reminders.add({'id': id, 'hour': time.hour, 'minute': time.minute});
+    });
     await _saveReminders();
     await _scheduleReminder(id, time);
-    setState(() {});
   }
 
   Future<void> _deleteReminder(int id) async {
     await _notificationsPlugin.cancel(id);
-    _reminders.removeWhere((r) => r['id'] == id);
+    setState(() {
+      _reminders.removeWhere((r) => r['id'] == id);
+    });
     await _saveReminders();
-    setState(() {});
   }
 
   Future<void> _scheduleReminder(int id, TimeOfDay time) async {
@@ -150,6 +152,8 @@ class _AzkarScreenState extends State<AzkarScreen> {
         details,
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
         matchDateTimeComponents: DateTimeComponents.time,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
       );
     } catch (e) {
       // Fallback: show immediate notification if scheduling fails

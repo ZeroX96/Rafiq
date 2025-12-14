@@ -33,7 +33,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   // Qada Calculation Options
   String _qadaCalculationMethod = 'puberty'; // 'puberty', 'duration', 'manual'
-  int _missedYearsCount = 1;
+  int _missedYearsCount = 0;
+  int _missedMonthsCount = 0;
+  int _missedWeeksCount = 0;
+  int _missedDaysCount = 0;
   Map<String, int> _manualDebtInput = {
     'Fajr': 0,
     'Dhuhr': 0,
@@ -121,8 +124,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         menstruationDuration: _menstruationDuration,
       );
     } else if (_qadaCalculationMethod == 'duration') {
-      debt = calculator.calculateDebt(
-        yearsMissed: _missedYearsCount,
+      debt = calculator.calculateDebtDetailed(
+        years: _missedYearsCount,
+        months: _missedMonthsCount,
+        weeks: _missedWeeksCount,
+        days: _missedDaysCount,
         gender: _gender,
         hasMenstruation: _gender == 'Girl' || _gender == 'Woman',
         menstruationDuration: _menstruationDuration,
@@ -488,20 +494,20 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           if (_qadaCalculationMethod == 'duration')
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Row(
+              child: Column(
                 children: [
-                  Expanded(child: Text('Years Missed: $_missedYearsCount')),
-                  IconButton(
-                    icon: const Icon(Icons.remove),
-                    onPressed:
-                        () => setState(() {
-                          if (_missedYearsCount > 0) _missedYearsCount--;
-                        }),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.add),
-                    onPressed: () => setState(() => _missedYearsCount++),
-                  ),
+                  _buildDurationInput('Years', _missedYearsCount, (v) {
+                    setState(() => _missedYearsCount = v);
+                  }),
+                  _buildDurationInput('Months', _missedMonthsCount, (v) {
+                    setState(() => _missedMonthsCount = v);
+                  }),
+                  _buildDurationInput('Weeks', _missedWeeksCount, (v) {
+                    setState(() => _missedWeeksCount = v);
+                  }),
+                  _buildDurationInput('Days', _missedDaysCount, (v) {
+                    setState(() => _missedDaysCount = v);
+                  }),
                 ],
               ),
             ),
@@ -678,6 +684,24 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildDurationInput(String label, int value, Function(int) onChanged) {
+    return Row(
+      children: [
+        Expanded(child: Text('$label Missed: $value')),
+        IconButton(
+          icon: const Icon(Icons.remove),
+          onPressed: () {
+            if (value > 0) onChanged(value - 1);
+          },
+        ),
+        IconButton(
+          icon: const Icon(Icons.add),
+          onPressed: () => onChanged(value + 1),
+        ),
+      ],
     );
   }
 }

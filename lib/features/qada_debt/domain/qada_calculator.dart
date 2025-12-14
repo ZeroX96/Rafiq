@@ -2,19 +2,20 @@ class QadaCalculator {
   static const int daysInLunarYear = 354;
   static const int prayersPerDay = 5; // Fajr, Dhuhr, Asr, Maghrib, Isha
 
-  /// Calculates total missed prayers based on years missed.
+  /// Calculates total missed prayers based on duration.
   /// Returns a map of PrayerName -> Count
-  Map<String, int> calculateDebt({
-    required int yearsMissed,
-    int monthsMissed = 0,
-    int daysMissed = 0,
+  Map<String, int> calculateDebtDetailed({
+    int years = 0,
+    int months = 0,
+    int weeks = 0,
+    int days = 0,
     String gender = 'Male',
     bool hasMenstruation = false,
     int menstruationDuration = 7,
   }) {
     // 1 Lunar Year = 354 days
     int totalDays =
-        (yearsMissed * daysInLunarYear) + (monthsMissed * 29) + daysMissed;
+        (years * daysInLunarYear) + (months * 29) + (weeks * 7) + days;
 
     // Subtract menstruation days
     if ((gender == 'Female' || gender == 'Girl' || gender == 'Woman') &&

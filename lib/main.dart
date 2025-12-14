@@ -14,7 +14,31 @@ import 'package:rafiq/core/services/pin_service.dart';
 import 'package:rafiq/core/widgets/double_back_to_exit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-void main() {
+import 'package:rafiq/core/services/notification_service.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  try {
+    await NotificationService().initialize((response) async {
+      if (response.actionId == 'remind_later') {
+        if (response.payload != null) {
+          final prayerName = response.payload!;
+          final scheduledTime = DateTime.now().add(const Duration(minutes: 30));
+          await NotificationService().schedulePrayerNotification(
+            id: DateTime.now().millisecondsSinceEpoch,
+            title: 'Reminder: $prayerName',
+            body: 'Have you prayed $prayerName yet?',
+            scheduledTime: scheduledTime,
+            payload: prayerName,
+          );
+        }
+      }
+    });
+  } catch (e) {
+    debugPrint('Notification initialization failed: $e');
+  }
+
   runApp(const ProviderScope(child: RafiqApp()));
 }
 

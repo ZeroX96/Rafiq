@@ -101,3 +101,59 @@ Verify Qada UI changes and "Hide" toggle.
 Verify Quran content loads.
 Verify Azkar counters persist and reminders trigger.
 Verify new Icons and Quran text presence.
+
+
+Implementation Plan - Gamification & Enhancements
+Goal
+Implement gamification for daily prayers, enhance Qada UI, integrate real Quran content, and fix Azkar functionality.
+
+Proposed Changes
+1. Dependencies
+[MODIFY] 
+pubspec.yaml
+Add home_widget (for Android widget).
+Add google_sign_in (optional, or just regex for Gmail).
+2. Onboarding Overhaul
+[MODIFY] 
+onboarding_screen.dart
+Validation: Enforce alphabet-only names and valid Gmail regex.
+Navigation: Fix WillPopScope for back button and onSubmitted for Enter key.
+Content: Add Quran/Hadith/Quotes to each step.
+Logic: Add Menstruation Duration step and allow manual debt correction.
+3. Daily Prayer Gamification
+[MODIFY] 
+daily_prayer_screen.dart
+Gamification: Fix score calculation (dynamic based on checked items).
+Charts: Fix fl_chart implementation.
+Content: Add Shafaa and Witr prayers.
+4. Qada Tab Enhancements
+[MODIFY] 
+qada_debt_screen.dart
+UI: Convert prayer rows into large tappable buttons.
+Logic: Keep "+" button for manual adjustments.
+5. Quran Content
+[MODIFY] 
+quran_hadith_screen.dart
+Logic: Fix data loading (ensure quran package works or fetch from API).
+Tracking: Add "Mark as Read" feature and track total verses.
+6. Azkar Fixes
+[MODIFY] 
+azkar_screen.dart
+Logic: Add lifetime counter (persisted).
+Reminders: Implement showTimePicker for specific reminders.
+7. Overview Tab Revamp
+[MODIFY] 
+overview_screen.dart
+UI: Revamp to show real data (Prayers, Quran, Azkar, Debt).
+Charts: Add 3 types of charts (e.g., Weekly Prayers, Debt Progress, Quran Reading).
+Settings: Add button to access settings.
+8. Home Screen Widget
+New Feature: Implement home_widget to show summary on Android home screen.
+Verification Plan
+Manual Testing:
+Verify Score/Rank updates.
+Verify Chart renders on mobile.
+Verify Qada UI changes and "Hide" toggle.
+Verify Quran content loads.
+Verify Azkar counters persist and reminders trigger.
+Verify new Icons and Quran text presence.
