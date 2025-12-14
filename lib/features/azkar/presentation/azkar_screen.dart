@@ -336,16 +336,40 @@ class _AzkarScreenState extends State<AzkarScreen> {
             children:
                 _reminders.map((r) {
                   final time = TimeOfDay(hour: r['hour'], minute: r['minute']);
-                  return Chip(
+                  return InputChip(
                     label: Text(time.format(context)),
                     deleteIcon: const Icon(Icons.close, size: 16),
                     onDeleted: () => _deleteReminder(r['id']),
+                    onPressed: () => _showEditReminderDialog(r),
                   );
                 }).toList(),
           ),
         ],
       ),
     );
+  }
+
+  void _showEditReminderDialog(Map<String, dynamic> reminder) async {
+    final initialTime = TimeOfDay(
+      hour: reminder['hour'],
+      minute: reminder['minute'],
+    );
+    final time = await showTimePicker(
+      context: context,
+      initialTime: initialTime,
+      helpText: 'Edit Reminder Time',
+    );
+    if (time != null) {
+      await _deleteReminder(reminder['id']);
+      await _addReminder(time);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Reminder updated to ${time.format(context)}'),
+          ),
+        );
+      }
+    }
   }
 
   void _showAddDialog() {

@@ -38,6 +38,7 @@ class _DailyPrayerScreenState extends ConsumerState<DailyPrayerScreen> {
   int _dailyScore = 0;
   String _rank = 'Muslim';
   List<int> _weeklyProgress = [0, 0, 0, 0, 0, 0, 0];
+  String _gender = 'Male'; // Default
 
   // Daily Verse State
   int _currentSurah = 1;
@@ -49,6 +50,14 @@ class _DailyPrayerScreenState extends ConsumerState<DailyPrayerScreen> {
     _initializeDailyVerse();
     _loadPrayerTimes();
     _loadPrayerStatus();
+    _loadUserProfile();
+  }
+
+  Future<void> _loadUserProfile() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _gender = prefs.getString('profile_gender') ?? 'Male';
+    });
   }
 
   void _initializeDailyVerse() {
@@ -204,7 +213,7 @@ class _DailyPrayerScreenState extends ConsumerState<DailyPrayerScreen> {
 
   void _navigateToQuran() {
     // Navigate to Quran tab with correct route
-    context.go('/quran-hadith');
+    context.go('/quran-hadith/surah/$_currentSurah?verse=$_currentVerse');
   }
 
   @override
@@ -218,6 +227,21 @@ class _DailyPrayerScreenState extends ConsumerState<DailyPrayerScreen> {
             Text(_cityName, style: Theme.of(context).textTheme.labelMedium),
           ],
         ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: CircleAvatar(
+              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+              backgroundImage: AssetImage(
+                (_gender.toLowerCase().contains('female') ||
+                        _gender.toLowerCase().contains('girl') ||
+                        _gender.toLowerCase().contains('woman'))
+                    ? 'assets/images/avatar_woman.png'
+                    : 'assets/images/avatar_man.png',
+              ),
+            ),
+          ),
+        ],
       ),
       body:
           _isLoading

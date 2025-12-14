@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_islamic_icons/flutter_islamic_icons.dart';
 import 'package:quran/quran.dart' as quran;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 class QuranHadithScreen extends StatefulWidget {
   const QuranHadithScreen({super.key});
@@ -254,7 +255,7 @@ class _QuranHadithScreenState extends State<QuranHadithScreen> {
       context,
       MaterialPageRoute(
         builder:
-            (context) => _SurahDetailPage(
+            (context) => SurahDetailScreen(
               surahNumber: surahNumber,
               onVersesReadChanged: () => _loadTotalVersesRead(),
             ),
@@ -263,26 +264,43 @@ class _QuranHadithScreenState extends State<QuranHadithScreen> {
   }
 }
 
-class _SurahDetailPage extends StatefulWidget {
+class SurahDetailScreen extends StatefulWidget {
   final int surahNumber;
-  final VoidCallback onVersesReadChanged;
+  final int? initialVerse;
+  final VoidCallback? onVersesReadChanged;
 
-  const _SurahDetailPage({
+  const SurahDetailScreen({
+    super.key,
     required this.surahNumber,
-    required this.onVersesReadChanged,
+    this.initialVerse,
+    this.onVersesReadChanged,
   });
 
   @override
-  State<_SurahDetailPage> createState() => _SurahDetailPageState();
+  State<SurahDetailScreen> createState() => _SurahDetailScreenState();
 }
 
-class _SurahDetailPageState extends State<_SurahDetailPage> {
+class _SurahDetailScreenState extends State<SurahDetailScreen> {
+  final ItemScrollController _itemScrollController = ItemScrollController();
+  final ItemPositionsListener _itemPositionsListener =
+      ItemPositionsListener.create();
   Map<int, bool> _readStatus = {};
 
   @override
   void initState() {
     super.initState();
     _loadReadStatus();
+    if (widget.initialVerse != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToVerse(widget.initialVerse!);
+      });
+    }
+  }
+
+  void _scrollToVerse(int verse) {
+    if (verse > 0) {
+      _itemScrollController.jumpTo(index: verse - 1);
+    }
   }
 
   Future<void> _loadReadStatus() async {
@@ -313,7 +331,9 @@ class _SurahDetailPageState extends State<_SurahDetailPage> {
     await prefs.setInt('quran_total_verses_read', total);
 
     setState(() => _readStatus[verseNumber] = newStatus);
-    widget.onVersesReadChanged();
+    if (widget.onVersesReadChanged != null) {
+      widget.onVersesReadChanged!();
+    }
   }
 
   @override
@@ -323,7 +343,9 @@ class _SurahDetailPageState extends State<_SurahDetailPage> {
         title: Text(quran.getSurahName(widget.surahNumber)),
         centerTitle: true,
       ),
-      body: ListView.builder(
+      body: ScrollablePositionedList.builder(
+        itemScrollController: _itemScrollController,
+        itemPositionsListener: _itemPositionsListener,
         padding: const EdgeInsets.all(16),
         itemCount: quran.getVerseCount(widget.surahNumber),
         itemBuilder: (context, index) {

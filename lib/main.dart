@@ -76,6 +76,24 @@ final _router = GoRouter(
         GoRoute(
           path: '/quran-hadith',
           builder: (context, state) => const QuranHadithScreen(),
+          routes: [
+            GoRoute(
+              path: 'surah/:surahNumber',
+              builder: (context, state) {
+                final surahNumber = int.parse(
+                  state.pathParameters['surahNumber']!,
+                );
+                final verse =
+                    state.uri.queryParameters['verse'] != null
+                        ? int.parse(state.uri.queryParameters['verse']!)
+                        : null;
+                return SurahDetailScreen(
+                  surahNumber: surahNumber,
+                  initialVerse: verse,
+                );
+              },
+            ),
+          ],
         ),
         GoRoute(
           path: '/azkar',

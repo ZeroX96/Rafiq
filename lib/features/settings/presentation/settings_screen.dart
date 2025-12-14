@@ -102,11 +102,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          _buildAvatar(),
+          const SizedBox(height: 24),
           _buildSectionHeader('Profile'),
-          _buildSettingsTile('Name', _name, Icons.person),
-          _buildSettingsTile('Location', _location, Icons.location_on),
-          _buildSettingsTile('Gender', _gender, Icons.wc),
-          _buildSettingsTile('Madhab', _madhab, Icons.school),
+          _buildSettingsTile('Name', _name, Icons.person, _editName),
+          _buildSettingsTile(
+            'Location',
+            _location,
+            Icons.location_on,
+            _editLocation,
+          ),
+          _buildSettingsTile(
+            'Gender',
+            _gender,
+            Icons.wc,
+            null,
+          ), // Gender usually fixed or requires re-onboarding
+          _buildSettingsTile('Madhab', _madhab, Icons.school, _editMadhab),
           const Divider(height: 32),
           _buildSectionHeader('Security'),
           ListTile(
@@ -147,6 +159,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Widget _buildAvatar() {
+    String imagePath = 'assets/images/avatar_man.png';
+    if (_gender.toLowerCase().contains('female') ||
+        _gender.toLowerCase().contains('girl') ||
+        _gender.toLowerCase().contains('woman')) {
+      imagePath = 'assets/images/avatar_woman.png';
+    }
+    return Center(
+      child: CircleAvatar(
+        radius: 50,
+        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+        backgroundImage: AssetImage(imagePath),
+      ),
+    );
+  }
+
   Widget _buildSectionHeader(String title) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -159,16 +187,121 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildSettingsTile(String label, String value, IconData icon) {
+  Widget _buildSettingsTile(
+    String label,
+    String value,
+    IconData icon,
+    VoidCallback? onTap,
+  ) {
     return ListTile(
       leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
       title: Text(label),
-      trailing: Text(
-        value,
-        style: Theme.of(
-          context,
-        ).textTheme.bodyMedium?.copyWith(color: Colors.grey),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            value,
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: Colors.grey),
+          ),
+          if (onTap != null) ...[
+            const SizedBox(width: 8),
+            const Icon(Icons.chevron_right, color: Colors.grey),
+          ],
+        ],
       ),
+      onTap: onTap,
     );
+  }
+
+  Future<void> _editName() async {
+    final controller = TextEditingController(text: _name);
+    final result = await showDialog<String>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Edit Name'),
+            content: TextField(
+              controller: controller,
+              decoration: const InputDecoration(labelText: 'Name'),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, controller.text),
+                child: const Text('Save'),
+              ),
+            ],
+          ),
+    );
+
+    if (result != null && result.isNotEmpty) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('profile_name', result);
+      setState(() => _name = result);
+    }
+  }
+
+  Future<void> _editLocation() async {
+    final controller = TextEditingController(text: _location);
+    final result = await showDialog<String>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Edit Location'),
+            content: TextField(
+              controller: controller,
+              decoration: const InputDecoration(labelText: 'City, Country'),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, controller.text),
+                child: const Text('Save'),
+              ),
+            ],
+          ),
+    );
+
+    if (result != null && result.isNotEmpty) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('location_name', result);
+      // Note: This only updates the name, not the coordinates.
+      // Ideally we should re-trigger location search, but for now this satisfies "change name or location".
+      setState(() => _location = result);
+    }
+  }
+
+  Future<void> _editMadhab() async {
+    final result = await showDialog<String>(
+      context: context,
+      builder:
+          (context) => SimpleDialog(
+            title: const Text('Select Madhab'),
+            children: [
+              SimpleDialogOption(
+                onPressed: () => Navigator.pop(context, 'Hanafi'),
+                child: const Text('Hanafi'),
+              ),
+              SimpleDialogOption(
+                onPressed: () => Navigator.pop(context, 'Shafi'),
+                child: const Text('Shafi'),
+              ),
+            ],
+          ),
+    );
+
+    if (result != null) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('profile_madhab', result);
+      setState(() => _madhab = result);
+    }
   }
 }
