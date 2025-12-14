@@ -45,6 +45,13 @@ dev_dependencies:
   flutter_lints: ^5.0.0
   build_runner: ^2.4.13
   drift_dev: ^2.24.0
+  flutter_launcher_icons: ^0.13.1
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/images/avatar_man.png"
+  min_sdk_android: 21
 
 flutter:
   uses-material-design: true
