@@ -33,6 +33,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   // Qada Calculation Options
   String _qadaCalculationMethod = 'puberty'; // 'puberty', 'duration', 'manual'
+  bool _trackSunnahDebt = false; // Whether to track Sunnah prayers in Qada debt
   int _missedYearsCount = 0;
   int _missedMonthsCount = 0;
   int _missedWeeksCount = 0;
@@ -169,6 +170,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
     // Save Qada Debt
     final prefs = await SharedPreferences.getInstance();
+
+    // Save Sunnah tracking preference
+    await prefs.setBool('track_sunnah_debt', _trackSunnahDebt);
+
     for (var entry in _calculatedDebt.entries) {
       await prefs.setInt('qada_debt_${entry.key}', entry.value);
     }
@@ -535,6 +540,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   ),
                 )
                 .toList(),
+          const Divider(height: 32),
+          SwitchListTile(
+            title: const Text('Track Sunnah Prayers'),
+            subtitle: const Text(
+              'Include Sunrise, Shafaa, and Witr in your Qada debt',
+            ),
+            value: _trackSunnahDebt,
+            onChanged: (v) => setState(() => _trackSunnahDebt = v),
+          ),
         ],
       ),
     );

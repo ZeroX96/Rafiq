@@ -15,6 +15,7 @@ import 'package:rafiq/core/widgets/double_back_to_exit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:rafiq/core/services/notification_service.dart';
+import 'package:rafiq/core/services/missed_prayer_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,6 +38,16 @@ void main() async {
     });
   } catch (e) {
     debugPrint('Notification initialization failed: $e');
+  }
+
+  // Check for missed prayers from previous days
+  try {
+    final addedToDebt = await MissedPrayerService.checkAndAddMissedPrayers();
+    if (addedToDebt > 0) {
+      debugPrint('Added $addedToDebt missed prayers to Qada debt');
+    }
+  } catch (e) {
+    debugPrint('Missed prayer check failed: $e');
   }
 
   runApp(const ProviderScope(child: RafiqApp()));
@@ -133,8 +144,37 @@ final _router = GoRouter(
   ],
 );
 
-class RafiqApp extends StatelessWidget {
+class RafiqApp extends StatefulWidget {
   const RafiqApp({super.key});
+
+  @override
+  State<RafiqApp> createState() => _RafiqAppState();
+}
+
+class _RafiqAppState extends State<RafiqApp> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // Check for missed prayers when app comes back to foreground
+      MissedPrayerService.checkAndAddMissedPrayers().then((added) {
+        if (added > 0) {
+          debugPrint('Added $added missed prayers to Qada debt on resume');
+        }
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

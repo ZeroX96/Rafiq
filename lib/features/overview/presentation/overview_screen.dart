@@ -29,6 +29,13 @@ class _OverviewScreenState extends State<OverviewScreen> {
     _loadStats();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Refresh stats whenever the screen is navigated to
+    _loadStats();
+  }
+
   Future<void> _loadStats() async {
     final prefs = await SharedPreferences.getInstance();
     final today = DateFormat('yyyy-MM-dd').format(DateTime.now());

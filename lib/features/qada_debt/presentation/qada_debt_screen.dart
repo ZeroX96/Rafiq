@@ -15,23 +15,22 @@ class QadaDebtScreen extends ConsumerStatefulWidget {
 }
 
 class _QadaDebtScreenState extends ConsumerState<QadaDebtScreen> {
-  Map<String, int> _debt = {
+  // Fard prayers (obligatory)
+  Map<String, int> _fardDebt = {
     'Fajr': 0,
     'Dhuhr': 0,
     'Asr': 0,
     'Maghrib': 0,
     'Isha': 0,
-    'Witr': 0,
   };
-  Map<String, int> _originalDebt = {
-    'Fajr': 0,
-    'Dhuhr': 0,
-    'Asr': 0,
-    'Maghrib': 0,
-    'Isha': 0,
-    'Witr': 0,
-  };
+
+  // Sunnah prayers (optional)
+  Map<String, int> _sunnahDebt = {'Sunrise': 0, 'Shafaa': 0, 'Witr': 0};
+
+  Map<String, int> _originalFardDebt = {};
+  Map<String, int> _originalSunnahDebt = {};
   bool _hideDebt = false;
+  bool _trackSunnah = false;
 
   final List<Map<String, String>> _quotes = [
     {
@@ -65,12 +64,23 @@ class _QadaDebtScreenState extends ConsumerState<QadaDebtScreen> {
     final settings = ref.read(settingsServiceProvider);
     final profile = await settings.getProfile();
 
-    Map<String, int> loadedDebt = {};
-    for (String prayer in ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha', 'Witr']) {
-      loadedDebt[prayer] = prefs.getInt('qada_debt_$prayer') ?? 0;
+    // Load user preference for Sunnah tracking
+    final trackSunnah = prefs.getBool('track_sunnah_debt') ?? false;
+
+    // Load Fard prayers
+    Map<String, int> loadedFard = {};
+    for (String prayer in ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha']) {
+      loadedFard[prayer] = prefs.getInt('qada_debt_$prayer') ?? 0;
     }
 
-    if (loadedDebt.values.every((v) => v == 0) && profile != null) {
+    // Load Sunnah prayers
+    Map<String, int> loadedSunnah = {};
+    for (String prayer in ['Sunrise', 'Shafaa', 'Witr']) {
+      loadedSunnah[prayer] = prefs.getInt('qada_debt_$prayer') ?? 0;
+    }
+
+    // Calculate from profile if all debts are zero
+    if (loadedFard.values.every((v) => v == 0) && profile != null) {
       final calculator = QadaCalculator();
       final calculated = calculator.calculateDebtFromProfile(
         dob: profile['dob'],
@@ -79,29 +89,42 @@ class _QadaDebtScreenState extends ConsumerState<QadaDebtScreen> {
         hasMenstruation:
             profile['gender'] == 'Girl' || profile['gender'] == 'Woman',
       );
-      loadedDebt = calculated;
-      for (var entry in loadedDebt.entries) {
+      // Only take Fard prayers from calculated
+      loadedFard = {
+        'Fajr': calculated['Fajr'] ?? 0,
+        'Dhuhr': calculated['Dhuhr'] ?? 0,
+        'Asr': calculated['Asr'] ?? 0,
+        'Maghrib': calculated['Maghrib'] ?? 0,
+        'Isha': calculated['Isha'] ?? 0,
+      };
+      for (var entry in loadedFard.entries) {
         await prefs.setInt('qada_debt_${entry.key}', entry.value);
       }
     }
 
     setState(() {
-      _debt = loadedDebt;
-      _originalDebt = Map.from(loadedDebt);
+      _fardDebt = loadedFard;
+      _sunnahDebt = loadedSunnah;
+      _originalFardDebt = Map.from(loadedFard);
+      _originalSunnahDebt = Map.from(loadedSunnah);
+      _trackSunnah = trackSunnah;
     });
   }
 
   Future<void> _saveDebt() async {
     final prefs = await SharedPreferences.getInstance();
-    for (var entry in _debt.entries) {
+    for (var entry in _fardDebt.entries) {
+      await prefs.setInt('qada_debt_${entry.key}', entry.value);
+    }
+    for (var entry in _sunnahDebt.entries) {
       await prefs.setInt('qada_debt_${entry.key}', entry.value);
     }
   }
 
-  void _decrement(String prayer) async {
+  void _decrementFard(String prayer) async {
     HapticFeedback.lightImpact();
     setState(() {
-      if (_debt[prayer]! > 0) _debt[prayer] = _debt[prayer]! - 1;
+      if (_fardDebt[prayer]! > 0) _fardDebt[prayer] = _fardDebt[prayer]! - 1;
     });
     _saveDebt();
 
@@ -112,14 +135,43 @@ class _QadaDebtScreenState extends ConsumerState<QadaDebtScreen> {
     await prefs.setString('last_qada_payment_any', now);
   }
 
-  void _increment(String prayer) {
+  void _incrementFard(String prayer) {
     HapticFeedback.lightImpact();
-    setState(() => _debt[prayer] = _debt[prayer]! + 1);
+    setState(() => _fardDebt[prayer] = _fardDebt[prayer]! + 1);
     _saveDebt();
   }
 
-  int get _totalDebt => _debt.values.fold(0, (a, b) => a + b);
-  int get _totalOriginal => _originalDebt.values.fold(0, (a, b) => a + b);
+  void _decrementSunnah(String prayer) async {
+    HapticFeedback.lightImpact();
+    setState(() {
+      if (_sunnahDebt[prayer]! > 0)
+        _sunnahDebt[prayer] = _sunnahDebt[prayer]! - 1;
+    });
+    _saveDebt();
+
+    final prefs = await SharedPreferences.getInstance();
+    final now = DateTime.now().toIso8601String();
+    await prefs.setString('last_qada_payment_$prayer', now);
+    await prefs.setString('last_qada_payment_any', now);
+  }
+
+  void _incrementSunnah(String prayer) {
+    HapticFeedback.lightImpact();
+    setState(() => _sunnahDebt[prayer] = _sunnahDebt[prayer]! + 1);
+    _saveDebt();
+  }
+
+  int get _totalFardDebt => _fardDebt.values.fold(0, (a, b) => a + b);
+  int get _totalSunnahDebt => _sunnahDebt.values.fold(0, (a, b) => a + b);
+  int get _totalDebt => _totalFardDebt + (_trackSunnah ? _totalSunnahDebt : 0);
+
+  int get _totalOriginalFard =>
+      _originalFardDebt.values.fold(0, (a, b) => a + b);
+  int get _totalOriginalSunnah =>
+      _originalSunnahDebt.values.fold(0, (a, b) => a + b);
+  int get _totalOriginal =>
+      _totalOriginalFard + (_trackSunnah ? _totalOriginalSunnah : 0);
+
   double get _paidPercentage =>
       _totalOriginal > 0
           ? ((_totalOriginal - _totalDebt) / _totalOriginal * 100).clamp(0, 100)
@@ -145,8 +197,26 @@ class _QadaDebtScreenState extends ConsumerState<QadaDebtScreen> {
           _buildQuoteCard(quote),
           const SizedBox(height: 16),
           _buildProgressChart(),
-          const SizedBox(height: 16),
-          ..._debt.entries.map((entry) => _buildDebtTile(entry)).toList(),
+          const SizedBox(height: 24),
+          const Text(
+            'Fard Prayers (Obligatory)',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          ..._fardDebt.entries
+              .map((entry) => _buildFardDebtTile(entry))
+              .toList(),
+          if (_trackSunnah) ...[
+            const SizedBox(height: 24),
+            const Text(
+              'Sunnah Prayers (Optional)',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            ..._sunnahDebt.entries
+                .map((entry) => _buildSunnahDebtTile(entry))
+                .toList(),
+          ],
         ],
       ),
     );
@@ -243,9 +313,9 @@ class _QadaDebtScreenState extends ConsumerState<QadaDebtScreen> {
     );
   }
 
-  Widget _buildDebtTile(MapEntry<String, int> entry) {
+  Widget _buildFardDebtTile(MapEntry<String, int> entry) {
     return InkWell(
-      onTap: () => _decrement(entry.key),
+      onTap: () => _decrementFard(entry.key),
       borderRadius: BorderRadius.circular(12),
       child: Card(
         margin: const EdgeInsets.symmetric(vertical: 8),
@@ -295,7 +365,73 @@ class _QadaDebtScreenState extends ConsumerState<QadaDebtScreen> {
                     ),
                   const SizedBox(width: 8),
                   IconButton(
-                    onPressed: () => _increment(entry.key),
+                    onPressed: () => _incrementFard(entry.key),
+                    icon: const Icon(Icons.add_circle_outline),
+                    tooltip: 'Add Debt (Correction)',
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSunnahDebtTile(MapEntry<String, int> entry) {
+    return InkWell(
+      onTap: () => _decrementSunnah(entry.key),
+      borderRadius: BorderRadius.circular(12),
+      child: Card(
+        margin: const EdgeInsets.symmetric(vertical: 8),
+        color: Theme.of(context).colorScheme.secondaryContainer,
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.star_outline,
+                    size: 32,
+                    color: Theme.of(context).colorScheme.secondary,
+                  ),
+                  const SizedBox(width: 16),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        entry.key,
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      Text(
+                        'Tap to mark one done',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              Row(
+                children: [
+                  if (!_hideDebt)
+                    Text(
+                      entry.value.toString(),
+                      style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    )
+                  else
+                    Text(
+                      '---',
+                      style: Theme.of(
+                        context,
+                      ).textTheme.titleMedium?.copyWith(color: Colors.grey),
+                    ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    onPressed: () => _incrementSunnah(entry.key),
                     icon: const Icon(Icons.add_circle_outline),
                     tooltip: 'Add Debt (Correction)',
                   ),
