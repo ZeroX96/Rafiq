@@ -316,6 +316,7 @@ class _QadaDebtScreenState extends ConsumerState<QadaDebtScreen> {
   Widget _buildFardDebtTile(MapEntry<String, int> entry) {
     return InkWell(
       onTap: () => _decrementFard(entry.key),
+      onLongPress: () => _showAddDebtDialog(entry.key, true),
       borderRadius: BorderRadius.circular(12),
       child: Card(
         margin: const EdgeInsets.symmetric(vertical: 8),
@@ -340,37 +341,27 @@ class _QadaDebtScreenState extends ConsumerState<QadaDebtScreen> {
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                       Text(
-                        'Tap to mark one done',
+                        'Tap to pay • Long press to add',
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                     ],
                   ),
                 ],
               ),
-              Row(
-                children: [
-                  if (!_hideDebt)
-                    Text(
-                      entry.value.toString(),
-                      style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    )
-                  else
-                    Text(
-                      '---',
-                      style: Theme.of(
-                        context,
-                      ).textTheme.titleMedium?.copyWith(color: Colors.grey),
-                    ),
-                  const SizedBox(width: 8),
-                  IconButton(
-                    onPressed: () => _incrementFard(entry.key),
-                    icon: const Icon(Icons.add_circle_outline),
-                    tooltip: 'Add Debt (Correction)',
+              if (!_hideDebt)
+                Text(
+                  entry.value.toString(),
+                  style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                    fontWeight: FontWeight.bold,
                   ),
-                ],
-              ),
+                )
+              else
+                Text(
+                  '---',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleMedium?.copyWith(color: Colors.grey),
+                ),
             ],
           ),
         ),
@@ -378,9 +369,47 @@ class _QadaDebtScreenState extends ConsumerState<QadaDebtScreen> {
     );
   }
 
+  Future<void> _showAddDebtDialog(String prayer, bool isFard) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: Text('Add Missed $prayer?'),
+            content: Text(
+              'This will add 1 missed $prayer prayer to your Qada debt.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Add'),
+              ),
+            ],
+          ),
+    );
+
+    if (confirmed == true) {
+      HapticFeedback.mediumImpact();
+      if (isFard) {
+        _incrementFard(prayer);
+      } else {
+        _incrementSunnah(prayer);
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Added 1 missed $prayer prayer')),
+        );
+      }
+    }
+  }
+
   Widget _buildSunnahDebtTile(MapEntry<String, int> entry) {
     return InkWell(
       onTap: () => _decrementSunnah(entry.key),
+      onLongPress: () => _showAddDebtDialog(entry.key, false),
       borderRadius: BorderRadius.circular(12),
       child: Card(
         margin: const EdgeInsets.symmetric(vertical: 8),
@@ -406,37 +435,27 @@ class _QadaDebtScreenState extends ConsumerState<QadaDebtScreen> {
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                       Text(
-                        'Tap to mark one done',
+                        'Tap to pay • Long press to add',
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                     ],
                   ),
                 ],
               ),
-              Row(
-                children: [
-                  if (!_hideDebt)
-                    Text(
-                      entry.value.toString(),
-                      style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    )
-                  else
-                    Text(
-                      '---',
-                      style: Theme.of(
-                        context,
-                      ).textTheme.titleMedium?.copyWith(color: Colors.grey),
-                    ),
-                  const SizedBox(width: 8),
-                  IconButton(
-                    onPressed: () => _incrementSunnah(entry.key),
-                    icon: const Icon(Icons.add_circle_outline),
-                    tooltip: 'Add Debt (Correction)',
+              if (!_hideDebt)
+                Text(
+                  entry.value.toString(),
+                  style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                    fontWeight: FontWeight.bold,
                   ),
-                ],
-              ),
+                )
+              else
+                Text(
+                  '---',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleMedium?.copyWith(color: Colors.grey),
+                ),
             ],
           ),
         ),

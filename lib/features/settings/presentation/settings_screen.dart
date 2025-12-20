@@ -3,6 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:rafiq/features/pin/presentation/pin_screen.dart';
+import 'package:rafiq/core/services/notification_service.dart';
+import 'package:rafiq/core/services/prayer_notification_scheduler.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -17,6 +20,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String _gender = '';
   String _madhab = '';
 
+  // Notification settings
+  bool _notificationsEnabled = true;
+  int _preReminderMinutes = 10;
+  int _postCheckMinutes = 20;
+  bool _sunnahNotifications = true;
+  String _notificationSound = 'default'; // 'azan', 'default', 'silent'
+
   @override
   void initState() {
     super.initState();
@@ -30,6 +40,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _location = prefs.getString('location_name') ?? 'Not set';
       _gender = prefs.getString('profile_gender') ?? 'Not set';
       _madhab = prefs.getString('profile_madhab') ?? 'Not set';
+
+      // Load notification settings
+      _notificationsEnabled =
+          prefs.getBool('prayer_notifications_enabled') ?? true;
+      _preReminderMinutes = prefs.getInt('pre_prayer_reminder_minutes') ?? 10;
+      _postCheckMinutes = prefs.getInt('post_prayer_check_minutes') ?? 20;
+      _sunnahNotifications =
+          prefs.getBool('sunnah_notifications_enabled') ?? true;
+      _notificationSound = prefs.getString('notification_sound') ?? 'default';
     });
   }
 
@@ -133,6 +152,197 @@ class _SettingsScreenState extends State<SettingsScreen> {
               );
             },
           ),
+          const Divider(height: 32),
+          _buildSectionHeader('Notifications'),
+          SwitchListTile(
+            secondary: Icon(
+              Icons.notifications,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            title: const Text('Prayer Notifications'),
+            subtitle: const Text('Get notified at prayer times'),
+            value: _notificationsEnabled,
+            onChanged: (value) async {
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.setBool('prayer_notifications_enabled', value);
+              setState(() => _notificationsEnabled = value);
+            },
+          ),
+          if (_notificationsEnabled) ...[
+            ListTile(
+              leading: Icon(
+                Icons.timer,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              title: const Text('Pre-Prayer Reminder'),
+              subtitle: Text(
+                _preReminderMinutes == 0
+                    ? 'Off'
+                    : '$_preReminderMinutes minutes before',
+              ),
+              trailing: DropdownButton<int>(
+                value: _preReminderMinutes,
+                items: const [
+                  DropdownMenuItem(value: 0, child: Text('Off')),
+                  DropdownMenuItem(value: 5, child: Text('5 min')),
+                  DropdownMenuItem(value: 10, child: Text('10 min')),
+                  DropdownMenuItem(value: 15, child: Text('15 min')),
+                  DropdownMenuItem(value: 30, child: Text('30 min')),
+                ],
+                onChanged: (value) async {
+                  if (value != null) {
+                    final prefs = await SharedPreferences.getInstance();
+                    await prefs.setInt('pre_prayer_reminder_minutes', value);
+                    setState(() => _preReminderMinutes = value);
+                  }
+                },
+              ),
+            ),
+            ListTile(
+              leading: Icon(
+                Icons.help_outline,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              title: const Text('Post-Prayer Check'),
+              subtitle: Text('$_postCheckMinutes minutes after prayer'),
+              trailing: DropdownButton<int>(
+                value: _postCheckMinutes,
+                items: const [
+                  DropdownMenuItem(value: 0, child: Text('Off')),
+                  DropdownMenuItem(value: 10, child: Text('10 min')),
+                  DropdownMenuItem(value: 20, child: Text('20 min')),
+                  DropdownMenuItem(value: 30, child: Text('30 min')),
+                ],
+                onChanged: (value) async {
+                  if (value != null) {
+                    final prefs = await SharedPreferences.getInstance();
+                    await prefs.setInt('post_prayer_check_minutes', value);
+                    setState(() => _postCheckMinutes = value);
+                  }
+                },
+              ),
+            ),
+            SwitchListTile(
+              secondary: Icon(
+                Icons.star_outline,
+                color: Theme.of(context).colorScheme.secondary,
+              ),
+              title: const Text('Sunnah Notifications'),
+              subtitle: const Text('Sunrise, Shafaa, Witr'),
+              value: _sunnahNotifications,
+              onChanged: (value) async {
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.setBool('sunnah_notifications_enabled', value);
+                setState(() => _sunnahNotifications = value);
+              },
+            ),
+            ListTile(
+              leading: Icon(
+                Icons.music_note,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              title: const Text('Notification Sound'),
+              trailing: DropdownButton<String>(
+                value: _notificationSound,
+                items: const [
+                  DropdownMenuItem(value: 'azan', child: Text('Azan')),
+                  DropdownMenuItem(value: 'default', child: Text('Default')),
+                  DropdownMenuItem(value: 'silent', child: Text('Silent')),
+                ],
+                onChanged: (value) async {
+                  if (value != null) {
+                    final prefs = await SharedPreferences.getInstance();
+                    await prefs.setString('notification_sound', value);
+                    setState(() => _notificationSound = value);
+                  }
+                },
+              ),
+            ),
+            const Divider(indent: 50),
+            ListTile(
+              leading: const Icon(Icons.bug_report, color: Colors.orange),
+              title: const Text('Test Notification'),
+              subtitle: const Text('Send an immediate test notification'),
+              onTap: () async {
+                await NotificationService().showImmediateNotification(
+                  id: 999,
+                  title: 'Test Notification',
+                  body: 'If you see this, notifications are working!',
+                );
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Test notification sent!')),
+                  );
+                }
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.security, color: Colors.green),
+              title: const Text('Request Permissions'),
+              subtitle: const Text('Manually request notification permissions'),
+              onTap: () async {
+                await NotificationService().requestPermissions();
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Permissions requested!')),
+                  );
+                }
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.sync, color: Colors.blue),
+              title: const Text('Reschedule All'),
+              subtitle: const Text('Force reschedule all prayer notifications'),
+              onTap: () async {
+                await PrayerNotificationScheduler.rescheduleAll();
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Notifications rescheduled!')),
+                  );
+                }
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.info, color: Colors.purple),
+              title: const Text('Check Status'),
+              subtitle: const Text('Check if notifications are allowed by OS'),
+              onTap: () async {
+                final status = await Permission.notification.status;
+                final exactAlarm = await Permission.scheduleExactAlarm.status;
+                if (mounted) {
+                  showDialog(
+                    context: context,
+                    builder:
+                        (context) => AlertDialog(
+                          title: const Text('Notification Status'),
+                          content: Text(
+                            'Notifications: ${status.name}\n'
+                            'Exact Alarms: ${exactAlarm.name}\n'
+                            'Plugin Init: ${NotificationService().isInitialized}',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text('OK'),
+                            ),
+                          ],
+                        ),
+                  );
+                }
+              },
+            ),
+            ListTile(
+              leading: const Icon(
+                Icons.settings_applications,
+                color: Colors.grey,
+              ),
+              title: const Text('Open App Settings'),
+              subtitle: const Text('Open system settings to enable manually'),
+              onTap: () async {
+                await openAppSettings();
+              },
+            ),
+          ],
           const Divider(height: 32),
           _buildSectionHeader('Actions'),
           ListTile(

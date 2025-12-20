@@ -16,15 +16,47 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:rafiq/core/services/notification_service.dart';
 import 'package:rafiq/core/services/missed_prayer_service.dart';
+import 'package:rafiq/core/services/prayer_notification_scheduler.dart';
+import 'package:intl/intl.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   try {
     await NotificationService().initialize((response) async {
-      if (response.actionId == 'remind_later') {
-        if (response.payload != null) {
-          final prayerName = response.payload!;
+      final prefs = await SharedPreferences.getInstance();
+      final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+
+      // Extract prayer name from payload (remove suffixes like _pre_reminder, _post_check)
+      String? prayerName = response.payload;
+      if (prayerName != null) {
+        if (prayerName.endsWith('_pre_reminder')) {
+          prayerName = prayerName.replaceAll('_pre_reminder', '');
+        } else if (prayerName.endsWith('_post_check')) {
+          prayerName = prayerName.replaceAll('_post_check', '');
+        }
+      }
+
+      if (response.actionId == 'prayed') {
+        // Mark prayer as done
+        if (prayerName != null) {
+          await prefs.setString('prayer_status_${today}_$prayerName', 'Fard');
+          await prefs.setBool('prayer_${today}_$prayerName', true);
+          await prefs.setString(
+            'prayer_time_${today}_$prayerName',
+            DateTime.now().toIso8601String(),
+          );
+          debugPrint('Marked $prayerName as prayed via notification');
+        }
+      } else if (response.actionId == 'missed') {
+        // Mark prayer as missed
+        if (prayerName != null) {
+          await prefs.setString('prayer_status_${today}_$prayerName', 'Missed');
+          await prefs.setBool('prayer_${today}_$prayerName', false);
+          debugPrint('Marked $prayerName as missed via notification');
+        }
+      } else if (response.actionId == 'remind_later') {
+        if (prayerName != null) {
           final scheduledTime = DateTime.now().add(const Duration(minutes: 30));
           await NotificationService().schedulePrayerNotification(
             id: DateTime.now().millisecondsSinceEpoch,
@@ -33,6 +65,7 @@ void main() async {
             scheduledTime: scheduledTime,
             payload: prayerName,
           );
+          debugPrint('Rescheduled $prayerName reminder for 30 minutes later');
         }
       }
     });
@@ -48,6 +81,22 @@ void main() async {
     }
   } catch (e) {
     debugPrint('Missed prayer check failed: $e');
+  }
+
+  // Request notification permissions explicitly
+  try {
+    await NotificationService().requestPermissions();
+    debugPrint('Notification permissions requested');
+  } catch (e) {
+    debugPrint('Permission request failed: $e');
+  }
+
+  // Schedule prayer notifications (force reschedule every time for now)
+  try {
+    await PrayerNotificationScheduler.rescheduleAll();
+    debugPrint('Prayer notifications scheduled');
+  } catch (e) {
+    debugPrint('Prayer notification scheduling failed: $e');
   }
 
   runApp(const ProviderScope(child: RafiqApp()));
