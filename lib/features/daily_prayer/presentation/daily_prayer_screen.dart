@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:quran/quran.dart' as quran;
 import 'package:rafiq/core/services/settings_service.dart';
+import 'package:rafiq/core/services/home_widget_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class DailyPrayerScreen extends ConsumerStatefulWidget {
@@ -81,6 +82,28 @@ class _DailyPrayerScreenState extends ConsumerState<DailyPrayerScreen> {
         _prayerTimes = PrayerTimes(myCoordinates, date, params);
         _cityName = location['name'];
         _isLoading = false;
+
+        // Update Widget
+        if (_prayerTimes != null) {
+          final next = _prayerTimes!.nextPrayer();
+          final nextTime = _prayerTimes!.timeForPrayer(next);
+          if (nextTime != null) {
+            String prayerName = next.name; // e.g. 'fajr'
+            // Capitalize
+            prayerName = prayerName[0].toUpperCase() + prayerName.substring(1);
+            final timeStr = DateFormat.jm().format(nextTime);
+            HomeWidgetService.updateNextPrayer(prayerName, timeStr);
+          } else {
+            // Next is tomorrow Fajr? Adhan lib handles this usually but sometimes returns null if next is tomorrow
+            // If next is null/none, it means after Isha. Next is Fajr tomorrow.
+            // We can check 'fajr'
+            // For MVP, just show Isha or 'Fajr Tomorrow'
+            HomeWidgetService.updateNextPrayer(
+              'Fajr',
+              DateFormat.jm().format(_prayerTimes!.fajr),
+            );
+          }
+        }
       });
     } else {
       setState(() {

@@ -22,6 +22,7 @@ class _OverviewScreenState extends State<OverviewScreen> {
   int _totalQadaDebt = 0;
   String _userName = '...';
   List<int> _weeklyPrayers = [0, 0, 0, 0, 0, 0, 0];
+  Map<String, int> _qadaDetails = {}; // Stores specific debt per prayer
 
   @override
   void initState() {
@@ -82,8 +83,11 @@ class _OverviewScreenState extends State<OverviewScreen> {
 
     // Load Qada debt
     int qadaTotal = 0;
+    Map<String, int> details = {};
     for (String prayer in ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha', 'Witr']) {
-      qadaTotal += prefs.getInt('qada_debt_$prayer') ?? 0;
+      final debt = prefs.getInt('qada_debt_$prayer') ?? 0;
+      qadaTotal += debt;
+      details[prayer] = debt;
     }
 
     // Load user name
@@ -95,6 +99,7 @@ class _OverviewScreenState extends State<OverviewScreen> {
       _totalVersesRead = versesRead;
       _lifetimeAzkar = azkarLifetime;
       _totalQadaDebt = qadaTotal;
+      _qadaDetails = details;
       _userName = name;
     });
   }
@@ -305,24 +310,157 @@ class _OverviewScreenState extends State<OverviewScreen> {
   }
 
   Widget _buildDebtChart() {
-    // Placeholder for Pie Chart
-    return SizedBox(
-      height: 150,
-      child: Center(
-        child: Text(
-          'Total Qada Debt: $_totalQadaDebt prayers remaining',
-          style: Theme.of(context).textTheme.titleMedium,
+    if (_totalQadaDebt == 0) {
+      return Card(
+        color: Colors.green.shade50,
+        child: const Padding(
+          padding: EdgeInsets.all(16.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.check_circle, color: Colors.green),
+              SizedBox(width: 8),
+              Text(
+                'MashaAllah! You are debt free.',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Pie Chart Logic
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            SizedBox(
+              height: 200,
+              child: PieChart(
+                PieChartData(
+                  sectionsSpace: 2,
+                  centerSpaceRadius: 40,
+                  sections:
+                      _qadaDetails.entries.map((e) {
+                        final color = _getPrayerColor(e.key);
+                        final value = e.value.toDouble();
+                        final percent =
+                            (_totalQadaDebt > 0)
+                                ? (value / _totalQadaDebt * 100)
+                                : 0;
+
+                        return PieChartSectionData(
+                          color: color,
+                          value: value,
+                          title: percent > 5 ? '${percent.toInt()}%' : '',
+                          radius: 50,
+                          titleStyle: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        );
+                      }).toList(),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 16,
+              runSpacing: 8,
+              children:
+                  _qadaDetails.entries.where((e) => e.value > 0).map((e) {
+                    return Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 12,
+                          height: 12,
+                          decoration: BoxDecoration(
+                            color: _getPrayerColor(e.key),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Text('${e.key}: ${e.value}'),
+                      ],
+                    );
+                  }).toList(),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Total Remaining: $_totalQadaDebt',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ],
         ),
       ),
     );
   }
 
+  Color _getPrayerColor(String prayer) {
+    switch (prayer) {
+      case 'Fajr':
+        return Colors.orange.shade300;
+      case 'Dhuhr':
+        return Colors.yellow.shade700;
+      case 'Asr':
+        return Colors.orange.shade800;
+      case 'Maghrib':
+        return Colors.red.shade900;
+      case 'Isha':
+        return Colors.indigo.shade900;
+      case 'Witr':
+        return Colors.purple.shade900;
+      default:
+        return Colors.grey;
+    }
+  }
+
   Widget _buildAzkarChart() {
-    return LinearProgressIndicator(
-      value: _lifetimeAzkar > 0 ? (_lifetimeAzkar / 10000).clamp(0.0, 1.0) : 0,
-      minHeight: 20,
-      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-      valueColor: AlwaysStoppedAnimation(Theme.of(context).colorScheme.primary),
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Lifetime Total'),
+                Text(
+                  '$_lifetimeAzkar',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            LinearProgressIndicator(
+              value: _lifetimeAzkar > 0 ? (_lifetimeAzkar % 1000) / 1000 : 0,
+              // Modulo 1000 to show cycle progress
+              minHeight: 12,
+              borderRadius: BorderRadius.circular(6),
+              backgroundColor:
+                  Theme.of(context).colorScheme.surfaceContainerHighest,
+              valueColor: AlwaysStoppedAnimation(
+                Theme.of(context).colorScheme.primary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '${1000 - (_lifetimeAzkar % 1000)} to next milestone',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
+        ),
+      ),
     );
   }
 

@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:rafiq/features/pin/presentation/pin_screen.dart';
 import 'package:rafiq/core/services/notification_service.dart';
 import 'package:rafiq/core/services/prayer_notification_scheduler.dart';
+import 'package:rafiq/core/services/backup_service.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -344,6 +345,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ],
           const Divider(height: 32),
+          const Divider(height: 32),
+          _buildSectionHeader('Data Management'),
+          ListTile(
+            leading: const Icon(Icons.cloud_download, color: Colors.blue),
+            title: const Text('Export Backup'),
+            subtitle: const Text('Save your progress to a file'),
+            onTap: () => BackupService.exportData(context),
+          ),
+          ListTile(
+            leading: const Icon(Icons.cloud_upload, color: Colors.green),
+            title: const Text('Import Backup'),
+            subtitle: const Text('Restore from JSON clipboard'),
+            onTap: _showImportDialog,
+          ),
+          const Divider(height: 32),
           _buildSectionHeader('Actions'),
           ListTile(
             leading: const Icon(Icons.refresh, color: Colors.orange),
@@ -512,6 +528,63 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('profile_madhab', result);
       setState(() => _madhab = result);
+    }
+  }
+
+  Future<void> _showImportDialog() async {
+    final controller = TextEditingController();
+    final result = await showDialog<String>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Import Backup'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('Paste the content of your backup file here:'),
+                const SizedBox(height: 8),
+                TextField(
+                  controller:
+                      controller, // Fixed: use the local controller variable
+                  maxLines: 5,
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    hintText: '{"profile_name": "...", ...}',
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, controller.text),
+                child: const Text('Import'),
+              ),
+            ],
+          ),
+    );
+
+    if (result != null && result.isNotEmpty) {
+      final success = await BackupService.importDataFromJson(result);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              success
+                  ? 'Import successful! Please restart app.'
+                  : 'Import failed: Invalid data',
+            ),
+            backgroundColor: success ? Colors.green : Colors.red,
+          ),
+        );
+        if (success) {
+          // Optionally force restart or reload settings
+          _loadSettings();
+        }
+      }
     }
   }
 }

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_islamic_icons/flutter_islamic_icons.dart';
 import 'package:quran/quran.dart' as quran;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:rafiq/features/quran_hadith/data/hadith_service.dart';
 
@@ -399,6 +400,16 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
       ItemPositionsListener.create();
   Map<int, bool> _readStatus = {};
 
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  bool _isPlaying = false;
+  bool _isLoadingAudio = false;
+
+  @override
+  void dispose() {
+    _audioPlayer.dispose();
+    super.dispose();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -455,6 +466,22 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
       appBar: AppBar(
         title: Text(quran.getSurahName(widget.surahNumber)),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon:
+                _isLoadingAudio
+                    ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                    : Icon(_isPlaying ? Icons.pause : Icons.play_arrow),
+            onPressed: _toggleAudio,
+          ),
+        ],
       ),
       body: ScrollablePositionedList.builder(
         itemScrollController: _itemScrollController,
@@ -546,5 +573,34 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
         },
       ),
     );
+  }
+
+  Future<void> _toggleAudio() async {
+    if (_isPlaying) {
+      await _audioPlayer.pause();
+      setState(() => _isPlaying = false);
+    } else {
+      setState(() => _isLoadingAudio = true);
+      try {
+        final surahStr = widget.surahNumber.toString().padLeft(3, '0');
+        final url = 'https://server8.mp3quran.net/afs/$surahStr.mp3';
+        await _audioPlayer.play(UrlSource(url));
+        setState(() {
+          _isPlaying = true;
+          _isLoadingAudio = false;
+        });
+
+        _audioPlayer.onPlayerComplete.listen((event) {
+          if (mounted) setState(() => _isPlaying = false);
+        });
+      } catch (e) {
+        setState(() => _isLoadingAudio = false);
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Audio Error: $e')));
+        }
+      }
+    }
   }
 }
