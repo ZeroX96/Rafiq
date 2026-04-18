@@ -5,7 +5,7 @@
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg?style=for-the-badge)](https://opensource.org/licenses/Apache-2.0)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=for-the-badge)](http://makeapullrequest.com)
 
-![Rafiq Cover](Rafiq/assets/images/rafiq_project_cover.png)
+![Rafiq Cover](assets/images/rafiq_project_cover.png)
 
 **Rafiq** is a comprehensive, privacy-first spiritual companion for Muslims. It is designed to help you stay consistent with your daily prayers, recover missed prayers (**Qada**), track your progress in reading the **Quran** and **Hadith**, and maintain your daily **Azkar**. 
 
